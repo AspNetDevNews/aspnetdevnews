@@ -15,9 +15,9 @@ namespace AspNetDevNews
         }
 
         public static async Task Work() {
-            var ghService = new GitHubService();
+            var ghService = new IssueReceiveService();
             var twService = new TwitterService();
-            var stgService = new ATStorageService();
+            var stgService = new AzureTableStorageService();
 
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;

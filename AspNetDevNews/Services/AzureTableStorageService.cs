@@ -1,4 +1,5 @@
 ﻿using AspNetDevNews.Services.ATStorage;
+using AspNetDevNews.Services.Interfaces;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -12,20 +13,31 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services
 {
-    public class ATStorageService
+    public class AzureTableStorageService: IStorageService
     {
-        private string accountName = ConfigurationManager.AppSettings["TwittedIssuesATAccountName"];
-        private string accountKey = ConfigurationManager.AppSettings["TwittedIssuesATAccountKey"];
+        private ISettingsService Settings { get; set; }
+
+        public AzureTableStorageService() {
+            this.Settings = new SettingsService();
+        }
+
+        public AzureTableStorageService(ISettingsService settings) {
+            this.Settings = settings;
+        }
+
+        //private string accountName = ConfigurationManager.AppSettings["TwittedIssuesATAccountName"];
+        //private string accountKey = ConfigurationManager.AppSettings["TwittedIssuesATAccountKey"];
 
         private CloudTableClient GetClient() {
-            StorageCredentials creds = new StorageCredentials(accountName, accountKey);
+            StorageCredentials creds = new StorageCredentials(this.Settings.TwittedIssuesATAccountName, 
+                this.Settings.TwittedIssuesATAccountKey);
             CloudStorageAccount account = new CloudStorageAccount(creds, useHttps: true);
 
             CloudTableClient client = account.CreateCloudTableClient();
             return client;
         }
 
-        private CloudTable GetTable() {
+        private CloudTable GetIssuesTable() {
             CloudTableClient client = GetClient();
 
             CloudTable table = client.GetTableReference("twittedIssues");
@@ -55,11 +67,11 @@ namespace AspNetDevNews.Services
 
             try
             {
-                var table = GetTable();
+                var table = GetIssuesTable();
                 TableBatchOperation batchOperation = new TableBatchOperation();
 
                 foreach (var issue in issues) {
-                    var twittedIssue = new TwittedIssueEntity(issue.ToPartitionKeyFormat(), issue.Number.ToString());
+                    var twittedIssue = new TwittedIssueEntity(issue.GetPartitionKey(), issue.GetRowKey());
                     twittedIssue.Title = issue.Title;
                     twittedIssue.Url = issue.Url;
                     twittedIssue.Labels = string.Join(";", issue.Labels);
@@ -81,23 +93,22 @@ namespace AspNetDevNews.Services
             }
         }
 
-        public void Store(Exception exception, Models.Issue issue, string operation)
+        public async Task Store(Exception exception, Models.Issue issue, string operation)
         {
 
             try
             {
                 var table = GetExceptionsTable();
 
-                var storeException = new ExceptionEntity(operation,
-                    DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-FFFFFFF"));
-                storeException.TwitRowKey = issue.Organization + "+" + issue.Repository;
-                storeException.TwitPartitionKey = issue.Number.ToString();
+                var storeException = new ExceptionEntity(operation, DateTime.Now.GetRowKey());
+                storeException.TwitRowKey = issue.GetRowKey();
+                storeException.TwitPartitionKey = issue.GetPartitionKey();
                 storeException.CreatedAt = DateTime.Now;
                 storeException.Exception = JsonConvert.SerializeObject(exception);
                 storeException.Operation = operation;
 
                 TableOperation insertOperation = TableOperation.Insert(storeException);
-                table.Execute(insertOperation);
+                var result = await table.ExecuteAsync(insertOperation);
             }
             catch (Exception ex)
             {
@@ -105,29 +116,27 @@ namespace AspNetDevNews.Services
             }
         }
 
-        public void ReportExection(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories)
+        public async Task ReportExection(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories)
         {
 
             try
             {
                 var table = GetExcecutionsTable();
 
-                var Report = new ExecutionEntity("execution", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-FFFFFFF"));
+                var Report = new ExecutionEntity("execution", DateTime.Now.GetRowKey());
                 Report.EndedAt = EndedAt;
                 Report.StartedAt = StartedAt;
                 Report.TwittedIsseues = TwittedIssues;
                 Report.CheckedRepositories = CheckedRepositories;
 
                 TableOperation insertOperation = TableOperation.Insert(Report);
-                table.Execute(insertOperation);
+                var result = await table.ExecuteAsync(insertOperation);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
             }
         }
-
-
 
 
         public async Task<List<Models.Issue>> RemoveExisting(List<Models.Issue> issues) {
@@ -135,10 +144,10 @@ namespace AspNetDevNews.Services
 
             try
             {
-                var table = GetTable();
+                var table = GetIssuesTable();
 
                 foreach (var issue in issues) { 
-                    TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.ToPartitionKeyFormat(), issue.Number.ToString());
+                    TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.GetPartitionKey(), issue.GetRowKey());
 
                     TableResult query = await table.ExecuteAsync(retrieveOperation);
                     if (query.Result == null)
@@ -156,9 +165,9 @@ namespace AspNetDevNews.Services
         public async Task<bool> Exists(Models.TwittedIssue issue) {
             try
             {
-                var table = GetTable();
+                var table = GetIssuesTable();
 
-                TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.ToPartitionKeyFormat(), issue.Number.ToString());
+                TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.GetPartitionKey(), issue.GetRowKey());
 
                 TableResult query = await table.ExecuteAsync(retrieveOperation);
 
@@ -182,36 +191,36 @@ namespace AspNetDevNews.Services
 
         }
 
-        public void QueryData(Models.TwittedIssue isses, DateTime dtCreate) {
-            try
-            {
-                var table = GetTable();
+        //public void QueryData(Models.TwittedIssue isses, DateTime dtCreate) {
+        //    try
+        //    {
+        //        var table = GetIssuesTable();
 
-                var baseballInventoryQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
-                                              where entry.PartitionKey == "Baseball" && entry.CreatedAt > dtCreate
-                                              select entry);
+        //        var baseballInventoryQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
+        //                                      where entry.PartitionKey == "Baseball" && entry.CreatedAt > dtCreate
+        //                                      select entry);
 
-                var baseballInventory = baseballInventoryQuery.ToList();
+        //        var baseballInventory = baseballInventoryQuery.ToList();
 
-                if (baseballInventory.Any())
-                {
-                    foreach (TwittedIssueEntity product in baseballInventory)
-                    {
-                        Console.WriteLine("Product: {0} as {1} items in stock", product.Title, product.RowKey);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("No inventory was not found.  Better order more!");
-                }
+        //        if (baseballInventory.Any())
+        //        {
+        //            foreach (TwittedIssueEntity product in baseballInventory)
+        //            {
+        //                Console.WriteLine("Product: {0} as {1} items in stock", product.Title, product.RowKey);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            Console.WriteLine("No inventory was not found.  Better order more!");
+        //        }
 
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex);
+        //    }
 
 
-        }
+        //}
     }
 }

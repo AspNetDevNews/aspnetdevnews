@@ -1,93 +1,79 @@
-﻿using Octokit;
+﻿using AspNetDevNews.Services.Interfaces;
+using Octokit;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using AspNetDevNews.Models;
 
 namespace AspNetDevNews.Services
 {
-    public class GitHubService
+    public class GitHubService : IGitHubService
     {
-        public IEnumerable<string> Organizations {
-            get { return new List<string> { "aspnet", "nuget" }; }
-        }
+        private ISettingsService Settings { get; set; }
 
-        public IEnumerable<string> Labels
+        public GitHubService()
         {
-            get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs" }; }
+            this.Settings = new SettingsService();
         }
 
-
-        public DateTimeOffset Since {
-            get { return DateTime.Now.AddDays(-7); }
+        public GitHubService(ISettingsService settings)
+        {
+            this.Settings = settings;
         }
 
-        private GitHubClient GetClient() {
-            var client = new GitHubClient(new ProductHeaderValue(ConfigurationManager.AppSettings["GitHubAppName"]));
-            var basicAuth = new Credentials(ConfigurationManager.AppSettings["GitHubUserId"], ConfigurationManager.AppSettings["GitHubPassword"]); 
+        private GitHubClient GetClient()
+        {
+            var client = new GitHubClient(new ProductHeaderValue(this.Settings.GitHubAppName));
+            var basicAuth = new Credentials(this.Settings.GitHubUserId, this.Settings.GitHubPassword);
             client.Credentials = basicAuth;
             return client;
         }
 
-        public async Task<IEnumerable<string>> Repositories( string organization)  {
-
+        public async Task<IEnumerable<string>> Repositories(string organization)
+        {
             var repositoriesNames = new List<string>();
             var client = GetClient();
 
             var repositories = await client.Repository.GetAllForOrg(organization);
-            foreach (var repository in repositories) {
+            foreach (var repository in repositories)
                 repositoriesNames.Add(repository.Name);
-            }
             return repositoriesNames;
         }
 
-        public async Task<List<Models.Issue>> RecentIssues(string organization, string repository) {
-
+        public async Task<IEnumerable<Models.Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
+        {
             var client = GetClient();
             var request = new RepositoryIssueRequest();
-            request.Since = this.Since;
+            request.Since = since;
 
-            try
+            var queryResult = await client.Issue.GetAllForRepository(organization, repository, request);
+            var issues = new List<Octokit.Issue>();
+            foreach (var issue in queryResult)
             {
-                var queryResult = await client.Issue.GetAllForRepository(organization, repository, request);
-                var issues = new List<Issue>();
-                foreach (var issue in queryResult)
-                {
-                    if (issue.PullRequest != null)
-                        continue;
+                if (issue.PullRequest != null)
+                    continue;
 
-                    foreach (var refLabel in Labels)
-                    {
-                        if (issue.Labels.Any(lab => lab.Name == refLabel))
-                        {
-                            issues.Add(issue);
-                        }
-                    }
-                }
-                var issuesToProcess = new List<Models.Issue>();
-                foreach (var issue in issues)
-                {
-                    var issueToProcess = new Models.Issue();
-                    issueToProcess.Title = issue.Title;
-                    issueToProcess.Url = issue.HtmlUrl.ToString();
-                    issueToProcess.Labels = issue.Labels.Select(lab => lab.Name).ToArray();
-                    issueToProcess.Organization = organization;
-                    issueToProcess.Repository = repository;
-                    issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
-                    issueToProcess.Number = issue.Number;
-                    issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
-
-                    issuesToProcess.Add(issueToProcess);
-                }
-
-                return issuesToProcess;
+                issues.Add(issue);
             }
-            catch (Exception exc) {
-                var stgService = new ATStorageService();
-                stgService.Store(exc, null, "RecentIssues");
-                return new List<Models.Issue>();
+            var issuesToProcess = new List<Models.Issue>();
+            foreach (var issue in issues)
+            {
+                var issueToProcess = new Models.Issue();
+                issueToProcess.Title = issue.Title;
+                issueToProcess.Url = issue.HtmlUrl.ToString();
+                issueToProcess.Labels = issue.Labels.Select(lab => lab.Name).ToArray();
+                issueToProcess.Organization = organization;
+                issueToProcess.Repository = repository;
+                issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
+                issueToProcess.Number = issue.Number;
+                issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
+
+                issuesToProcess.Add(issueToProcess);
             }
+
+            return issuesToProcess;
         }
     }
 }

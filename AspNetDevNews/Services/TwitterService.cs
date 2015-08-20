@@ -1,4 +1,5 @@
 ﻿using AspNetDevNews.Models;
+using AspNetDevNews.Services.Interfaces;
 using LinqToTwitter;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,18 @@ namespace AspNetDevNews.Services
 {
     public class TwitterService
     {
+        public TwitterService() {
+            this.Settings = new SettingsService();
+            this.Storage = new AzureTableStorageService();
+        }
+
+        public TwitterService(ISettingsService settings, IStorageService storage) {
+            this.Settings = settings;
+            this.Storage = storage;
+        }
+
+        private ISettingsService Settings { get; set; } 
+        private IStorageService Storage { get; set; }
 
         public async Task<List<TwittedIssue>> SendIssues(IEnumerable<Models.Issue> issues) {
 
@@ -16,10 +29,10 @@ namespace AspNetDevNews.Services
                  {
                      CredentialStore = new SingleUserInMemoryCredentialStore
                      {
-                         ConsumerKey = ConfigurationManager.AppSettings["TwitterConsumerKey"],
-                         ConsumerSecret = ConfigurationManager.AppSettings["TwitterConsumerSecret"],
-                         AccessToken = ConfigurationManager.AppSettings["TwitterAccessToken"],
-                         AccessTokenSecret = ConfigurationManager.AppSettings["TwitterAccessTokenSecret"]
+                         ConsumerKey = this.Settings.TwitterConsumerKey,
+                         ConsumerSecret = this.Settings.TwitterConsumerSecret,
+                         AccessToken = this.Settings.TwitterAccessToken,
+                         AccessTokenSecret = this.Settings.TwitterAccessTokenSecret
                      }
                  };
             using (var twitterCtx = new TwitterContext(authorizer))
@@ -52,8 +65,7 @@ namespace AspNetDevNews.Services
                         twittedIssues.Add(twittedIssue);
                     }
                     catch (Exception exc) {
-                        var stgService = new ATStorageService();
-                        stgService.Store(exc, issue, "SendIssues");
+                        await Storage.Store(exc, issue, "SendIssues");
                     }
                 }
                 return twittedIssues;

@@ -17,9 +17,14 @@ namespace AspNetDevNews.Models
         public int Number { get; set; }
         public DateTime ?UpdatedAt { get; set; }
 
-        public string ToPartitionKeyFormat() {
+        public string GetPartitionKey() {
             return Organization + "+" + Repository;
         }
+        public string GetRowKey()
+        {
+            return Number.ToString();
+        }
+
 
     }
 }

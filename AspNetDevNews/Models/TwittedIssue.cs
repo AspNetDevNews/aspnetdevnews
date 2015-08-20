@@ -18,9 +18,13 @@ namespace AspNetDevNews.Models
         public DateTime? UpdatedAt { get; set; }
         public ulong StatusID { get; set; }
 
-        public string ToPartitionKeyFormat()
+        public string GetPartitionKey()
         {
             return Organization + "+" + Repository;
+        }
+        public string GetRowKey()
+        {
+            return Number.ToString();
         }
     }
 }

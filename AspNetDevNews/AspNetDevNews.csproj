@@ -128,17 +128,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DbModel\StorageContext.cs" />
+    <Compile Include="Helpers\DateTimeHelper.cs" />
     <Compile Include="Models\Issue.cs" />
     <Compile Include="Models\TwittedIssue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\ATStorageService.cs" />
+    <Compile Include="Services\AzureTableStorageService.cs" />
     <Compile Include="Services\ATStorage\ExceptionEntity.cs" />
     <Compile Include="Services\ATStorage\ExecutionEntity.cs" />
     <Compile Include="Services\ATStorage\TwittedIssueEntity.cs" />
     <Compile Include="Services\DDbStorageService.cs" />
     <Compile Include="Services\GitHubService.cs" />
-    <Compile Include="Services\StorageService.cs" />
+    <Compile Include="Services\Interfaces\IStorageService.cs" />
+    <Compile Include="Services\IssueReceiveService.cs" />
+    <Compile Include="Services\Interfaces\IGitHubService.cs" />
+    <Compile Include="Services\Interfaces\ISettingsService.cs" />
+    <Compile Include="Services\SettingsService.cs" />
     <Compile Include="Services\TwitterService.cs" />
   </ItemGroup>
   <ItemGroup>
