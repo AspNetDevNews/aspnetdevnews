@@ -3,8 +3,6 @@ using LinqToTwitter;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services
@@ -18,10 +16,10 @@ namespace AspNetDevNews.Services
                  {
                      CredentialStore = new SingleUserInMemoryCredentialStore
                      {
-                         ConsumerKey = ConfigurationSettings.AppSettings["TwitterConsumerKey"],
-                         ConsumerSecret = ConfigurationSettings.AppSettings["TwitterConsumerSecret"],
-                         AccessToken = ConfigurationSettings.AppSettings["TwitterAccessToken"],
-                         AccessTokenSecret = ConfigurationSettings.AppSettings["TwitterAccessTokenSecret"]
+                         ConsumerKey = ConfigurationManager.AppSettings["TwitterConsumerKey"],
+                         ConsumerSecret = ConfigurationManager.AppSettings["TwitterConsumerSecret"],
+                         AccessToken = ConfigurationManager.AppSettings["TwitterAccessToken"],
+                         AccessTokenSecret = ConfigurationManager.AppSettings["TwitterAccessTokenSecret"]
                      }
                  };
             using (var twitterCtx = new TwitterContext(authorizer))
@@ -29,7 +27,10 @@ namespace AspNetDevNews.Services
                 List<TwittedIssue> twittedIssues = new List<TwittedIssue>();
 
                 foreach (var issue in issues) {
-                    string test = "[" + issue.Repository + "] [" + issue.Title + "] " + issue.Url;
+                    string title = issue.Title.Trim();
+                    if (!title.EndsWith("."))
+                        title += ".";
+                    string test = "[" + issue.Repository + "]: " + title + " " + issue.Url;
 
                     try
                     {
@@ -54,12 +55,9 @@ namespace AspNetDevNews.Services
                         var stgService = new ATStorageService();
                         stgService.Store(exc, issue, "SendIssues");
                     }
-                    //tweet.
                 }
-                //Console.WriteLine(tweet.StatusID);
                 return twittedIssues;
-}
-
+            }
         }
     }
 }

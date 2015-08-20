@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services
@@ -16,20 +15,17 @@ namespace AspNetDevNews.Services
 
         public IEnumerable<string> Labels
         {
-            //get { return new List<string> { "enhancement" }; }
-            
             get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs" }; }
         }
 
 
         public DateTimeOffset Since {
-//            get { return DateTime.Now.AddMinutes(-15); }
             get { return DateTime.Now.AddDays(-7); }
         }
 
         private GitHubClient GetClient() {
-            var client = new GitHubClient(new ProductHeaderValue(ConfigurationSettings.AppSettings["GitHubAppName"]));
-            var basicAuth = new Credentials(ConfigurationSettings.AppSettings["GitHubUserId"], ConfigurationSettings.AppSettings["GitHubPassword"]); // NOTE: not real credentials
+            var client = new GitHubClient(new ProductHeaderValue(ConfigurationManager.AppSettings["GitHubAppName"]));
+            var basicAuth = new Credentials(ConfigurationManager.AppSettings["GitHubUserId"], ConfigurationManager.AppSettings["GitHubPassword"]); 
             client.Credentials = basicAuth;
             return client;
         }

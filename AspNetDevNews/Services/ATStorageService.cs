@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAzure.Storage;
+﻿using AspNetDevNews.Services.ATStorage;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
@@ -13,55 +14,8 @@ namespace AspNetDevNews.Services
 {
     public class ATStorageService
     {
-        public class TwittedIssueEntity : TableEntity
-        {
-            public TwittedIssueEntity(string orgRepository, string issueNumber)
-                : base(orgRepository, issueNumber)
-            { }
-
-            public TwittedIssueEntity() { }
-
-            public string Title { get; set; }
-            public string Url { get; set; }
-            public string Labels { get; set; }
-            public DateTime CreatedAt { get; set; }
-            public DateTime? UpdatedAt { get; set; }
-            public ulong TweetId { get; set; }
-        }
-
-        public class ExceptionEntity : TableEntity
-        {
-            public ExceptionEntity(string operation, string timestamp)
-                : base(operation, timestamp)
-            { }
-
-            public ExceptionEntity() { }
-
-            public DateTime CreatedAt { get; set; }
-            public string Exception { get; set; }
-            public string Operation { get; set; }
-            public string TwitPartitionKey { get; set; }
-            public string TwitRowKey { get; set; }
-        }
-
-
-        public class ExecutionEntity : TableEntity
-        {
-            public ExecutionEntity(string operation, string timestamp)
-                : base(operation, timestamp)
-            { }
-
-            public ExecutionEntity() { }
-
-            public DateTime StartedAt { get; set; }
-            public DateTime EndedAt { get; set; }
-            public int TwittedIsseues { get; set; }
-            public int CheckedRepositories { get; set; }
-        }
-
-
-        private string accountName = ConfigurationSettings.AppSettings["TwittedIssuesATAccountName"];
-        private string accountKey = ConfigurationSettings.AppSettings["TwittedIssuesATAccountKey"];
+        private string accountName = ConfigurationManager.AppSettings["TwittedIssuesATAccountName"];
+        private string accountKey = ConfigurationManager.AppSettings["TwittedIssuesATAccountKey"];
 
         private CloudTableClient GetClient() {
             StorageCredentials creds = new StorageCredentials(accountName, accountKey);
@@ -97,24 +51,29 @@ namespace AspNetDevNews.Services
             return table;
         }
 
-        public void Store(List<Models.TwittedIssue> issues) {
+        public async Task Store(List<Models.TwittedIssue> issues) {
 
             try
             {
                 var table = GetTable();
+                TableBatchOperation batchOperation = new TableBatchOperation();
 
                 foreach (var issue in issues) {
-                    var twittedIssue = new TwittedIssueEntity(issue.Organization + "+" + issue.Repository, issue.Number.ToString());
+                    var twittedIssue = new TwittedIssueEntity(issue.ToPartitionKeyFormat(), issue.Number.ToString());
                     twittedIssue.Title = issue.Title;
                     twittedIssue.Url = issue.Url;
                     twittedIssue.Labels = string.Join(";", issue.Labels);
                     twittedIssue.CreatedAt = issue.CreatedAt;
                     twittedIssue.UpdatedAt = issue.UpdatedAt;
                     twittedIssue.TweetId = issue.StatusID;
-                    TableOperation insertOperation = TableOperation.Insert(twittedIssue);
-                    // TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
-                    table.Execute(insertOperation);
+                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                    //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
+                    //await table.ExecuteAsync(insertOperation);
+                    batchOperation.Insert(twittedIssue);
+
                 }
+                if (batchOperation.Count() > 0)
+                    await table.ExecuteBatchAsync(batchOperation);
             }
             catch (Exception ex)
             {
@@ -179,7 +138,7 @@ namespace AspNetDevNews.Services
                 var table = GetTable();
 
                 foreach (var issue in issues) { 
-                    TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.Organization + "+" + issue.Repository, issue.Number.ToString());
+                    TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.ToPartitionKeyFormat(), issue.Number.ToString());
 
                     TableResult query = await table.ExecuteAsync(retrieveOperation);
                     if (query.Result == null)
@@ -199,7 +158,7 @@ namespace AspNetDevNews.Services
             {
                 var table = GetTable();
 
-                TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.Organization + "+" + issue.Repository, issue.Number.ToString());
+                TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.ToPartitionKeyFormat(), issue.Number.ToString());
 
                 TableResult query = await table.ExecuteAsync(retrieveOperation);
 
