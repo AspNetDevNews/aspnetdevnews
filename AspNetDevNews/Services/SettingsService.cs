@@ -37,6 +37,11 @@ namespace AspNetDevNews.Services
         public string TwitterAccessToken { get; private set; }
         public string TwitterAccessTokenSecret { get; private set; }
 
+        public DateTimeOffset Since
+        {
+            get { return DateTime.Now.AddDays(-7); }
+        }
+
 
     }
 }

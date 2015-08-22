@@ -72,6 +72,9 @@ namespace AspNetDevNews.Services
                 issueToProcess.Number = issue.Number;
                 issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
                 issueToProcess.Body = issue.Body;
+                issueToProcess.State = issue.State == 0 ? "Open" : "Closed";
+                issueToProcess.Comments = issue.Comments;
+
 
                 issuesToProcess.Add(issueToProcess);
             }

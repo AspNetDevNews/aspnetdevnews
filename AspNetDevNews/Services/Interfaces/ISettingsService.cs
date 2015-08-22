@@ -19,6 +19,6 @@ namespace AspNetDevNews.Services.Interfaces
         string TwitterConsumerSecret { get;  }
         string TwitterAccessToken { get;  }
         string TwitterAccessTokenSecret { get; }
-
+        DateTimeOffset Since { get; }
     }
 }

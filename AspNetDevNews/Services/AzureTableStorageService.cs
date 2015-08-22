@@ -10,6 +10,8 @@ using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AspNetDevNews.Models;
+using LinqToTwitter;
 
 namespace AspNetDevNews.Services
 {
@@ -26,9 +28,6 @@ namespace AspNetDevNews.Services
                 throw new ArgumentNullException("settings cannot be null");
             this.Settings = settings;
         }
-
-        //private string accountName = ConfigurationManager.AppSettings["TwittedIssuesATAccountName"];
-        //private string accountKey = ConfigurationManager.AppSettings["TwittedIssuesATAccountKey"];
 
         private CloudTableClient GetClient() {
             StorageCredentials creds = new StorageCredentials(this.Settings.TwittedIssuesATAccountName, 
@@ -84,6 +83,9 @@ namespace AspNetDevNews.Services
                     twittedIssue.TweetId = issue.StatusID;
                     twittedIssue.Body = issue.Body;
                     twittedIssue.TwittedAt = DateTime.Now;
+                    twittedIssue.State = issue.State;
+                    twittedIssue.Comments = issue.Comments;
+
                     //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
                     //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
                     //await table.ExecuteAsync(insertOperation);
@@ -198,36 +200,91 @@ namespace AspNetDevNews.Services
 
         }
 
-        //public void QueryData(Models.TwittedIssue isses, DateTime dtCreate) {
-        //    try
-        //    {
-        //        var table = GetIssuesTable();
-
-        //        var baseballInventoryQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
-        //                                      where entry.PartitionKey == "Baseball" && entry.CreatedAt > dtCreate
-        //                                      select entry);
-
-        //        var baseballInventory = baseballInventoryQuery.ToList();
-
-        //        if (baseballInventory.Any())
-        //        {
-        //            foreach (TwittedIssueEntity product in baseballInventory)
-        //            {
-        //                Console.WriteLine("Product: {0} as {1} items in stock", product.Title, product.RowKey);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("No inventory was not found.  Better order more!");
-        //        }
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex);
-        //    }
+        public async Task<IEnumerable<Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
+        {
+            try
+            {
+                var table = GetIssuesTable();
+                var issue = new Models.Issue();
+                issue.Organization = organization;
+                issue.Repository = repository;
 
 
-        //}
+                var recentIssuesQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
+                    where entry.PartitionKey == issue.GetPartitionKey() && entry.CreatedAt > since.DateTime
+                                              select entry);
+                var recentIssues = await recentIssuesQuery.ToListAsync();
+
+                var results = new List<Issue>();
+
+                if (recentIssues.Any())
+                {
+                    foreach (TwittedIssueEntity product in recentIssues)
+                    {
+                        Console.WriteLine("Product: {0} as {1} items in stock", product.Title, product.RowKey);
+                        var issues = new Issue();
+                        issue.Body = product.Body;
+                        issue.CreatedAt = product.CreatedAt;
+                        issue.Labels = product.Labels.Split(new char[] { ';' });
+                        issue.Number = Convert.ToInt32(product.RowKey);
+
+                        var partitionFields = product.PartitionKey.Split(new char[] { '+' });
+
+                        issue.Organization = partitionFields[0];
+                        issue.Repository = partitionFields[1];
+                        issue.Title = product.Title;
+                        issue.UpdatedAt = product.UpdatedAt;
+                        issue.Url = product.Url;
+                        issue.State = product.State;
+                        issue.Comments = product.Comments;
+
+                        results.Add(issue);
+                    }
+                    return results;
+                }
+                else
+                {
+                    Console.WriteLine("No inventory was not found.  Better order more!");
+                    return new List<Models.Issue>();
+                }
+
+            }
+            catch (Exception ex) {
+                Console.WriteLine(ex);
+                return new List<Models.Issue>();
+            }
+        }
+
+        public async Task Store(List<Issue> issues)
+        {
+            try
+            {
+                var table = GetIssuesTable();
+                TableBatchOperation batchOperation = new TableBatchOperation();
+
+                foreach (var issue in issues)
+                {
+                    var twittedIssue = new TwittedIssueEntity(issue.GetPartitionKey(), issue.GetRowKey());
+                    twittedIssue.Title = issue.Title;
+                    twittedIssue.UpdatedAt = issue.UpdatedAt;
+                    twittedIssue.State = issue.State;
+                    twittedIssue.Comments = issue.Comments;
+
+                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                    //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
+                    //await table.ExecuteAsync(insertOperation);
+                    batchOperation.Merge(twittedIssue);
+
+                }
+                if (batchOperation.Count() > 0)
+                {
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
     }
 }

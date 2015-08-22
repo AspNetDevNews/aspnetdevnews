@@ -23,5 +23,7 @@ namespace AspNetDevNews.Services.ATStorage
         public ulong TweetId { get; set; }
         public string Body { get; set; }
         public DateTime TwittedAt { get; set; }
+        public string State { get; internal set; }
+        public int Comments { get; internal set; }
     }
 }

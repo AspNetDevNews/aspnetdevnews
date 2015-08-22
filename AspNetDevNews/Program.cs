@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 // TODO: updated the UpdatedAt field at every update
 //       store the number of comments
+
 namespace AspNetDevNews
 {
     class Program
@@ -20,6 +21,7 @@ namespace AspNetDevNews
             var ghService = new IssueReceiveService();
             var twService = new TwitterService();
             var stgService = new AzureTableStorageService();
+            var setService = new SettingsService();
 
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;
@@ -29,8 +31,14 @@ namespace AspNetDevNews
                 var repositories = await ghService.Repositories(organization);
                 checkedRepositories += repositories.Count();
                 foreach (var repository in repositories) {
+                    // get recent created or modified issues
                     var issues = await ghService.RecentIssues(organization, repository);
-                    if(issues.Count() > 0) {
+                    // get the latest issues archived
+                    var lastStored = await stgService.GetRecentIssues(organization, repository, setService.Since);
+                    // update existing
+                    ghService.UpdateExistings(issues, lastStored);
+
+                    if (issues.Count() > 0) {
                         issues = await stgService.RemoveExisting(issues);
                         var twittedIssues = await twService.SendIssues(issues);
                         await stgService.Store(twittedIssues);

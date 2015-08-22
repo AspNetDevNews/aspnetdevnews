@@ -18,6 +18,8 @@ namespace AspNetDevNews.Models
         public DateTime? UpdatedAt { get; set; }
         public ulong StatusID { get; set; }
         public string Body { get; set; }
+        public string State { get; internal set; }
+        public int Comments { get; internal set; }
 
         public string GetPartitionKey()
         {
