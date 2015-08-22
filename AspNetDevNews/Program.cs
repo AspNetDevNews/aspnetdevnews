@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// TODO: updated the UpdatedAt field at every update
+//       store the number of comments
 namespace AspNetDevNews
 {
     class Program
@@ -31,14 +33,14 @@ namespace AspNetDevNews
                     if(issues.Count() > 0) {
                         issues = await stgService.RemoveExisting(issues);
                         var twittedIssues = await twService.SendIssues(issues);
-                        stgService.Store(twittedIssues);
+                        await stgService.Store(twittedIssues);
                         twitted += twittedIssues.Count;
                     }
                 }
             }
 
             DateTime dtFine = DateTime.Now;
-            stgService.ReportExection(dtInizio, dtFine, twitted, checkedRepositories);
+            await stgService.ReportExection(dtInizio, dtFine, twitted, checkedRepositories);
         }
     }
 }

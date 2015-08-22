@@ -22,6 +22,8 @@ namespace AspNetDevNews.Services
         }
 
         public AzureTableStorageService(ISettingsService settings) {
+            if (settings == null)
+                throw new ArgumentNullException("settings cannot be null");
             this.Settings = settings;
         }
 
@@ -36,6 +38,8 @@ namespace AspNetDevNews.Services
             CloudTableClient client = account.CreateCloudTableClient();
             return client;
         }
+
+        public enum Tables { Issues, Exception, Executions }
 
         private CloudTable GetIssuesTable() {
             CloudTableClient client = GetClient();
@@ -78,14 +82,17 @@ namespace AspNetDevNews.Services
                     twittedIssue.CreatedAt = issue.CreatedAt;
                     twittedIssue.UpdatedAt = issue.UpdatedAt;
                     twittedIssue.TweetId = issue.StatusID;
+                    twittedIssue.Body = issue.Body;
+                    twittedIssue.TwittedAt = DateTime.Now;
                     //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
                     //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
                     //await table.ExecuteAsync(insertOperation);
                     batchOperation.Insert(twittedIssue);
 
                 }
-                if (batchOperation.Count() > 0)
-                    await table.ExecuteBatchAsync(batchOperation);
+                if (batchOperation.Count() > 0) { 
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
             }
             catch (Exception ex)
             {

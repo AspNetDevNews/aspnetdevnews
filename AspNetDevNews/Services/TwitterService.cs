@@ -16,6 +16,11 @@ namespace AspNetDevNews.Services
         }
 
         public TwitterService(ISettingsService settings, IStorageService storage) {
+            if (Settings == null)
+                throw new ArgumentNullException("Settings cannot be null");
+            if (Storage == null)
+                throw new ArgumentNullException("Storage cannot be null");
+
             this.Settings = settings;
             this.Storage = storage;
         }
@@ -40,14 +45,9 @@ namespace AspNetDevNews.Services
                 List<TwittedIssue> twittedIssues = new List<TwittedIssue>();
 
                 foreach (var issue in issues) {
-                    string title = issue.Title.Trim();
-                    if (!title.EndsWith("."))
-                        title += ".";
-                    string test = "[" + issue.Repository + "]: " + title + " " + issue.Url;
-
                     try
                     {
-                        var tweet = await twitterCtx.TweetAsync(test);
+                        var tweet = await twitterCtx.TweetAsync(issue.GetTwitterText());
 
                         var twittedIssue = new TwittedIssue();
 
@@ -61,6 +61,7 @@ namespace AspNetDevNews.Services
                         twittedIssue.UpdatedAt = issue.UpdatedAt;
 
                         twittedIssue.StatusID = tweet.StatusID;
+                        twittedIssue.Body = issue.Body;
 
                         twittedIssues.Add(twittedIssue);
                     }

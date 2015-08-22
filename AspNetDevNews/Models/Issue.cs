@@ -16,6 +16,7 @@ namespace AspNetDevNews.Models
         public DateTime CreatedAt { get; set; }
         public int Number { get; set; }
         public DateTime ?UpdatedAt { get; set; }
+        public string Body { get; set; }
 
         public string GetPartitionKey() {
             return Organization + "+" + Repository;
@@ -24,7 +25,12 @@ namespace AspNetDevNews.Models
         {
             return Number.ToString();
         }
-
+        public string GetTwitterText() {
+            string title = this.Title.Trim();
+            if (!title.EndsWith("."))
+                title += ".";
+            return "[" + this.Repository + "]: " + title + " " + this.Url;
+        }
 
     }
 }

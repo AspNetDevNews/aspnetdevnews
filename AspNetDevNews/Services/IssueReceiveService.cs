@@ -19,6 +19,11 @@ namespace AspNetDevNews.Services
         }
 
         public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService) {
+            if (gitHubService == null)
+                throw new ArgumentNullException("gitHubService cannot be null");
+            if (storageService == null)
+                throw new ArgumentNullException("storageService cannot be null");
+
             this.GitHubService = gitHubService;
             this.StorageService = storageService;
         }

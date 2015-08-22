@@ -17,6 +17,7 @@ namespace AspNetDevNews.Models
         public int Number { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public ulong StatusID { get; set; }
+        public string Body { get; set; }
 
         public string GetPartitionKey()
         {

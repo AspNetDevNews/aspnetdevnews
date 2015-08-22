@@ -20,6 +20,8 @@ namespace AspNetDevNews.Services
 
         public GitHubService(ISettingsService settings)
         {
+            if (settings == null)
+                throw new ArgumentNullException("settings cannot be null");
             this.Settings = settings;
         }
 
@@ -69,6 +71,7 @@ namespace AspNetDevNews.Services
                 issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
                 issueToProcess.Number = issue.Number;
                 issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
+                issueToProcess.Body = issue.Body;
 
                 issuesToProcess.Add(issueToProcess);
             }
