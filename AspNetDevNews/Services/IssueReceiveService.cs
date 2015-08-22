@@ -1,11 +1,8 @@
 ﻿using AspNetDevNews.Services.Interfaces;
-using Octokit;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
-using AspNetDevNews.Models;
 
 namespace AspNetDevNews.Services
 {
@@ -14,24 +11,29 @@ namespace AspNetDevNews.Services
         private IGitHubService GitHubService { get; set; }
         private IStorageService StorageService { get; set; }
         private ISettingsService SettingsService { get; set; }
+        private ITwitterService TwitterService { get; set; }
 
         public IssueReceiveService() {
             this.GitHubService = new GitHubService();
             this.StorageService = new AzureTableStorageService();
             this.SettingsService = new SettingsService();
+            this.TwitterService = new TwitterService();
         }
 
-        public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService ) {
+        public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, ITwitterService twitterService ) {
             if (gitHubService == null)
                 throw new ArgumentNullException("gitHubService cannot be null");
             if (storageService == null)
                 throw new ArgumentNullException("storageService cannot be null");
             if (settingsService == null)
                 throw new ArgumentNullException("settingsService cannot be null");
+            if (twitterService == null)
+                throw new ArgumentNullException("twitterService cannot be null");
 
             this.GitHubService = gitHubService;
             this.StorageService = storageService;
             this.SettingsService = settingsService;
+            this.TwitterService = twitterService;
         }
 
         public IEnumerable<string> Organizations {
@@ -92,7 +94,7 @@ namespace AspNetDevNews.Services
             if (string.IsNullOrWhiteSpace(organization))
                 throw new ArgumentNullException("organization must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException("organization must be specified");
+                throw new ArgumentNullException("repository must be specified");
 
             try
             {
@@ -119,7 +121,7 @@ namespace AspNetDevNews.Services
             if (string.IsNullOrWhiteSpace(organization))
                 throw new ArgumentNullException("organization must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException("organization must be specified");
+                throw new ArgumentNullException("repository must be specified");
 
             return await this.StorageService.GetRecentIssues(organization, repository, this.SettingsService.Since);
         }
@@ -129,5 +131,86 @@ namespace AspNetDevNews.Services
                 return; 
             await this.StorageService.Merge(issues);
         }
+
+        public async Task<IList<Models.Issue>> RemoveExisting(IList<Models.Issue> issues)
+        {
+            List<Models.Issue> result = new List<Models.Issue>();
+            if (issues == null || issues.Count == 0)
+                return result;
+
+            var organization = issues[0].Organization;
+            var repository = issues[0].Repository;
+
+            foreach (var issue in issues) {
+                if (issue.Organization != organization || issue.Repository != repository)
+                    throw new ApplicationException("Can process only issues from the same repository");
+            }
+
+            List <string> RowKeysToScan = new List<string>();
+            foreach (var issue in issues)
+                RowKeysToScan.Add(issue.GetRowKey());
+
+            try
+            {
+
+                var issuesFound = await this.StorageService.GetBatchIssues(organization, repository, RowKeysToScan);
+
+                foreach (var issue in issues)
+                {
+                    bool inArchive = false;
+                    foreach (var issueFound in issuesFound) {
+                        if (issue.GetPartitionKey() == issueFound.GetPartitionKey() && issue.GetRowKey() == issueFound.GetRowKey())
+                            inArchive = true;
+                    }
+                    if (!inArchive)
+                        result.Add(issue);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new List<Models.Issue>();
+            }
+
+        }
+
+        public async Task<IList<Models.TwittedIssue>> PublishNewIssues(IList<Models.Issue> issues) {
+            if (issues == null || issues.Count == 0)
+                return new List<Models.TwittedIssue>();
+            return await this.TwitterService.SendIssues(issues);
+        }
+
+        public async Task StorePublishedIssues(IList<Models.TwittedIssue> twittedIssues) {
+            await this.StorageService.Store(twittedIssues);
+        }
+
+        public async Task<int> ProcessRepository(string organization, string repository) {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException("organization must be specified");
+            if (string.IsNullOrWhiteSpace(repository))
+                throw new ArgumentNullException("repository must be specified");
+
+            // get recent created or modified issues
+            var issues = await RecentGitHubIssues(organization, repository);
+            // if no issues are reported from github, go next repository
+            if (issues == null || issues.Count == 0)
+                return 0;
+            // get the latest issues archived
+            var lastStored = await RecentStorageIssues(organization, repository);
+            // check for updates
+            var changed = await IssuesToUpdate(issues, lastStored);
+            // if updated ones, merge the changes
+            await Merge(changed);
+            // remove from the list the ones already in the storage, keeping just the ones 
+            // I have to tweet and store
+            issues = await RemoveExisting(issues);
+            // publish the new issues
+            var twittedIssues = await PublishNewIssues(issues);
+            // store in the storage the data about the new issues
+            await StorePublishedIssues(twittedIssues);
+            return twittedIssues.Count;
+
+        }
+
     }
 }

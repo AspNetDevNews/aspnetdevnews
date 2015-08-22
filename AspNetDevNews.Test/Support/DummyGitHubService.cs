@@ -20,5 +20,9 @@ namespace AspNetDevNews.Test.Support
         {
             throw new NotImplementedException();
         }
+
+        public DummyGitHubService() {
+            RecentIssues = new List<Issue>();
+        }
     }
 }

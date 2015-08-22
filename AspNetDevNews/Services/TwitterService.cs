@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services
 {
-    public class TwitterService
+    public class TwitterService: ITwitterService
     {
         public TwitterService() {
             this.Settings = new SettingsService();
@@ -28,7 +28,7 @@ namespace AspNetDevNews.Services
         private ISettingsService Settings { get; set; } 
         private IStorageService Storage { get; set; }
 
-        public async Task<List<TwittedIssue>> SendIssues(IEnumerable<Models.Issue> issues) {
+        public async Task<IList<TwittedIssue>> SendIssues(IList<Models.Issue> issues) {
 
             var authorizer = new SingleUserAuthorizer
                  {

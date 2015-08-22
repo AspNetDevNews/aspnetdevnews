@@ -14,20 +14,16 @@ namespace AspNetDevNews.Test
     {
         private IssueReceiveService GetService(IGitHubService gitHubService)
         {
-            var dummyGutHubService = new DummyGitHubService();
-            dummyGutHubService.RecentIssues = new List<Issue>();
-
             var ghService = new IssueReceiveService(
                 gitHubService: gitHubService,
                 storageService: new DummyStorageService(),
-                settingsService: new OneDaySettings());
+                settingsService: new OneDaySettings(),
+                twitterService: new DummyTwitterService());
             return ghService;
         }
 
         private IssueReceiveService GetService() {
             var dummyGutHubService = new DummyGitHubService();
-            dummyGutHubService.RecentIssues = new List<Issue>();
-
             return GetService(dummyGutHubService);
         }
 
@@ -64,7 +60,6 @@ namespace AspNetDevNews.Test
         public async Task IssuesWithAtLeastOneLabelAreOk()
         {
             var dummyGutHubService = new DummyGitHubService();
-            dummyGutHubService.RecentIssues = new List<Issue>();
             var ghService = GetService( dummyGutHubService );
 
             foreach (var label in ghService.Labels) {
@@ -72,7 +67,7 @@ namespace AspNetDevNews.Test
                 dummyGutHubService.RecentIssues.Add(new Issue { Labels = new[] { label } } );
                 var issues = await ghService.RecentGitHubIssues(".", ".");
                 Assert.IsNotNull(issues);
-                Assert.AreEqual(issues.Count, 1);
+                Assert.AreEqual(1,issues.Count);
             }
         }
 
@@ -80,46 +75,42 @@ namespace AspNetDevNews.Test
         public async Task IssuesWithOtherLabelAreKo()
         {
             var dummyGutHubService = new DummyGitHubService();
-            dummyGutHubService.RecentIssues = new List<Issue>();
             var ghService = GetService(dummyGutHubService);
 
             dummyGutHubService.RecentIssues.Add(new Issue { Labels = new[] { "pippo" } });
             var issues = await ghService.RecentGitHubIssues(".", ".");
             Assert.IsNotNull(issues);
-            Assert.AreEqual(issues.Count, 0);
+            Assert.AreEqual(0, issues.Count);
         }
 
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IssuesWithNoLabelAreKo()
         {
             var dummyGutHubService = new DummyGitHubService();
-            dummyGutHubService.RecentIssues = new List<Issue>();
             var ghService = GetService(dummyGutHubService);
 
             dummyGutHubService.RecentIssues.Add(new Issue { Labels = new string[] { } });
             var issues = await ghService.RecentGitHubIssues(".", ".");
             Assert.IsNotNull(issues);
-            Assert.AreEqual(issues.Count,0);
+            Assert.AreEqual(0, issues.Count);
         }
 
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IfFailingInGetIssuesReturnsEmptyList()
         {
             var dummyGutHubService = new DummyGitHubService();
-            dummyGutHubService.RecentIssues = new List<Issue>();
             var ghService = GetService(dummyGutHubService);
 
             dummyGutHubService.RecentIssues.Add(new Issue { Labels = new string[] { } });
             var issues = await ghService.RecentGitHubIssues(".", ".");
             Assert.IsNotNull(issues);
-            Assert.AreEqual(issues.Count,0);
+            Assert.AreEqual(0, issues.Count);
         }
 
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IfOneOkAndOneKoJustOneIsReturned()
         {
             var dummyGutHubService = new DummyGitHubService();
-            dummyGutHubService.RecentIssues = new List<Issue>();
             var ghService = GetService(dummyGutHubService);
 
             foreach (var label in ghService.Labels)
@@ -130,8 +121,8 @@ namespace AspNetDevNews.Test
 
                 var issues = await ghService.RecentGitHubIssues(".", ".");
                 Assert.IsNotNull(issues);
-                Assert.AreEqual(issues.Count,1);
-                Assert.AreEqual(issues[0].Title,"Ok");
+                Assert.AreEqual(1, issues.Count);
+                Assert.AreEqual("Ok", issues[0].Title);
             }
         }
 

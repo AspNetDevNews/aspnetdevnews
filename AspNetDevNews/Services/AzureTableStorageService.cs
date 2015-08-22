@@ -66,7 +66,7 @@ namespace AspNetDevNews.Services
             return table;
         }
 
-        public async Task Store(List<Models.TwittedIssue> issues) {
+        public async Task Store(IList<Models.TwittedIssue> issues) {
 
             try
             {
@@ -148,29 +148,6 @@ namespace AspNetDevNews.Services
         }
 
 
-        public async Task<IList<Models.Issue>> RemoveExisting(IList<Models.Issue> issues) {
-            List<Models.Issue> result = new List<Models.Issue>();
-
-            try
-            {
-                var table = GetIssuesTable();
-
-                foreach (var issue in issues) { 
-                    TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.GetPartitionKey(), issue.GetRowKey());
-
-                    TableResult query = await table.ExecuteAsync(retrieveOperation);
-                    if (query.Result == null)
-                        result.Add(issue);
-                }
-                return result;
-            }
-            catch (Exception ex)
-            {
-                return result;
-            }
-
-        }
-
         public async Task<bool> Exists(Models.TwittedIssue issue) {
             try
             {
@@ -199,6 +176,63 @@ namespace AspNetDevNews.Services
             }
 
         }
+
+        public async Task<IList<Issue>> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
+        {
+            try
+            {
+                var table = GetIssuesTable();
+                var issue = new Models.Issue();
+                issue.Organization = organization;
+                issue.Repository = repository;
+
+
+                var recentIssuesQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
+                                         where entry.PartitionKey == issue.GetPartitionKey() && rowKeys.Contains(entry.RowKey)
+                                         select entry);
+                var recentIssues = await recentIssuesQuery.ToListAsync();
+
+                var results = new List<Issue>();
+
+                if (recentIssues.Any())
+                {
+                    foreach (TwittedIssueEntity product in recentIssues)
+                    {
+                        Console.WriteLine("Product: {0} as {1} items in stock", product.Title, product.RowKey);
+                        var issues = new Issue();
+                        issue.Body = product.Body;
+                        issue.CreatedAt = product.CreatedAt;
+                        issue.Labels = product.Labels.Split(new char[] { ';' });
+                        issue.Number = Convert.ToInt32(product.RowKey);
+
+                        var partitionFields = product.PartitionKey.Split(new char[] { '+' });
+
+                        issue.Organization = partitionFields[0];
+                        issue.Repository = partitionFields[1];
+                        issue.Title = product.Title;
+                        issue.UpdatedAt = product.UpdatedAt;
+                        issue.Url = product.Url;
+                        issue.State = product.State;
+                        issue.Comments = product.Comments;
+
+                        results.Add(issue);
+                    }
+                    return results;
+                }
+                else
+                {
+                    Console.WriteLine("No inventory was not found.  Better order more!");
+                    return new List<Models.Issue>();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return new List<Models.Issue>();
+            }
+        }
+
 
         public async Task<IList<Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
         {

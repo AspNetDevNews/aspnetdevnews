@@ -1,4 +1,5 @@
 ﻿using AspNetDevNews.Models;
+using AspNetDevNews.Services;
 using AspNetDevNews.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -8,28 +9,30 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Test.Support
 {
-    public class DummyStorageService : IStorageService
+    public class ReadOnlyAzureStorageTableService : IStorageService
     {
-        public DummyStorageService() {
+        private AzureTableStorageService AzureStorage { get; set;  }
+        public ReadOnlyAzureStorageTableService() {
             Existing = new List<Issue>();
             RecentIssues = new List<Issue>();
             Cleaned = new List<Issue>();
+            AzureStorage = new AzureTableStorageService();
         }
         public List<Issue> RecentIssues { get; set; }
         public List<Issue> Cleaned { get; set; }
         public List<Issue> Existing { get; set; }
-        public Task<bool> Exists(TwittedIssue issue)
+        public async Task<bool> Exists(TwittedIssue issue)
         {
-            throw new NotImplementedException();
+            return await AzureStorage.Exists(issue);
         }
 
         public async Task<IList<Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
         {
-            return RecentIssues;
+            return await AzureStorage.GetRecentIssues(organization, repository, since );
         }
         public async Task<IList<Issue>> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
         {
-            return Existing;
+            return await AzureStorage.GetBatchIssues(organization, repository, rowKeys);
         }
 
         #region Store methods do nothing

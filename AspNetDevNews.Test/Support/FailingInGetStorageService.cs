@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Test.Support
 {
-    public class DummyStorageService : IStorageService
+    public class FailingInGetStorageService : IStorageService
     {
-        public DummyStorageService() {
+        public FailingInGetStorageService() {
             Existing = new List<Issue>();
             RecentIssues = new List<Issue>();
             Cleaned = new List<Issue>();
@@ -29,7 +29,7 @@ namespace AspNetDevNews.Test.Support
         }
         public async Task<IList<Issue>> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
         {
-            return Existing;
+            throw new NotImplementedException();
         }
 
         #region Store methods do nothing

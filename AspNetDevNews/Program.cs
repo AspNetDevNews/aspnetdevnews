@@ -20,9 +20,6 @@ namespace AspNetDevNews
         public static async Task Work() {
             var ghService = new IssueReceiveService();
 
-            var twService = new TwitterService();
-            var stgService = new AzureTableStorageService();
-
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;
             int checkedRepositories = 0;
@@ -33,24 +30,28 @@ namespace AspNetDevNews
                 foreach (var repository in repositories) {
                     // get recent created or modified issues
                     var issues = await ghService.RecentGitHubIssues(organization, repository);
+                    // if no issues are reported from github, go next repository
+                    if (issues == null || issues.Count == 0)
+                        continue;
                     // get the latest issues archived
                     var lastStored = await ghService.RecentStorageIssues(organization, repository);
                     // check for updates
                     var changed = await ghService.IssuesToUpdate(issues, lastStored);
-                    if (changed.Count > 0)
-                        await ghService.Merge(changed);
-
-
-                    if (issues.Count() > 0) {
-                        issues = await stgService.RemoveExisting(issues);
-                        var twittedIssues = await twService.SendIssues(issues);
-                        await stgService.Store(twittedIssues);
-                        twitted += twittedIssues.Count;
-                    }
+                    // if updated ones, merge the changes
+                    await ghService.Merge(changed);
+                    // remove from the list the ones already in the storage, keeping just the ones 
+                    // I have to tweet and store
+                    issues = await ghService.RemoveExisting(issues);
+                    // publish the new issues
+                    var twittedIssues = await ghService.PublishNewIssues(issues);
+                    // store in the storage the data about the new issues
+                    await ghService.StorePublishedIssues(twittedIssues);
+                    twitted += twittedIssues.Count;
                 }
             }
 
             DateTime dtFine = DateTime.Now;
+            var stgService = new AzureTableStorageService();
             await stgService.ReportExection(dtInizio, dtFine, twitted, checkedRepositories);
         }
     }

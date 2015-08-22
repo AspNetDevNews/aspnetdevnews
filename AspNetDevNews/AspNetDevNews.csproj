@@ -141,9 +141,11 @@
     <Compile Include="Services\DDbStorageService.cs" />
     <Compile Include="Services\GitHubService.cs" />
     <Compile Include="Services\Interfaces\IStorageService.cs" />
+    <Compile Include="Services\Interfaces\ITwitterService.cs" />
     <Compile Include="Services\IssueReceiveService.cs" />
     <Compile Include="Services\Interfaces\IGitHubService.cs" />
     <Compile Include="Services\Interfaces\ISettingsService.cs" />
+    <Compile Include="Services\ReadOnlyAzureStorageTableService.cs" />
     <Compile Include="Services\SettingsService.cs" />
     <Compile Include="Services\TwitterService.cs" />
   </ItemGroup>
