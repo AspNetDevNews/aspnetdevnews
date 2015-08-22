@@ -50,8 +50,19 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="IssuesToUpdate.cs" />
+    <Compile Include="RecentGitHubIssues.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Support\DummyGitHubService.cs" />
+    <Compile Include="Support\DummyStorageService.cs" />
+    <Compile Include="Support\FailingInGetGitHubService.cs" />
+    <Compile Include="Support\OneDaySettings.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AspNetDevNews\AspNetDevNews.csproj">
+      <Project>{01b6e849-99e1-48ee-8211-1bedddc68de1}</Project>
+      <Name>AspNetDevNews</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

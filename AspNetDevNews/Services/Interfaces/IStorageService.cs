@@ -9,11 +9,12 @@ namespace AspNetDevNews.Services.Interfaces
     public interface IStorageService
     {
         Task Store(List<Models.TwittedIssue> issues);
-        Task Store(List<Models.Issue> issues);
+        Task Merge(IList<Models.Issue> issues);
         Task Store(Exception exception, Models.Issue issue, string operation);
+
         Task ReportExection(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories);
-        Task<List<Models.Issue>> RemoveExisting(List<Models.Issue> issues);
+        Task<IList<Models.Issue>> RemoveExisting(IList<Models.Issue> issues);
         Task<bool> Exists(Models.TwittedIssue issue);
-        Task<IEnumerable<Models.Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since);
+        Task<IList<Models.Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since);
     }
 }

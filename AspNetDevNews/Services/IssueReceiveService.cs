@@ -38,36 +38,27 @@ namespace AspNetDevNews.Services
             get { return new List<string> { "aspnet", "nuget" }; }
         }
 
-        internal async Task<int> UpdateExistings(IEnumerable<Models.Issue> issues, IEnumerable<Models.Issue> lastStored)
+        public async Task<IList<Models.Issue>> IssuesToUpdate(IList<Models.Issue> issues, IList<Models.Issue> lastStored)
         {
             List<Models.Issue> toUpdate = new List<Models.Issue>();
+
+            if ((issues == null) || (lastStored == null))
+                return toUpdate;
+
             foreach (var stgIssue in lastStored) {
                 foreach (var githubIssue in issues)
                 {
-                    bool updated = false;
                     if (stgIssue.GetPartitionKey() == githubIssue.GetPartitionKey() && stgIssue.GetRowKey() == githubIssue.GetRowKey()) {
-                        if (stgIssue.Title != githubIssue.Title) {
-                            stgIssue.Title = githubIssue.Title;
-                            updated = true;
-                        }
+                        bool updated = false;
 
-                        if (stgIssue.UpdatedAt != githubIssue.UpdatedAt)
-                        {
-                            stgIssue.UpdatedAt = githubIssue.UpdatedAt;
+                        if (stgIssue.Title != githubIssue.Title) 
                             updated = true;
-                        }
-
-                        if (stgIssue.State != githubIssue.State)
-                        {
-                            stgIssue.State = githubIssue.State;
+                        else if (stgIssue.UpdatedAt != githubIssue.UpdatedAt)
                             updated = true;
-                        }
-
-                        if (stgIssue.Comments != githubIssue.Comments)
-                        {
-                            stgIssue.Comments = githubIssue.Comments;
+                        else if (stgIssue.State != githubIssue.State)
                             updated = true;
-                        }
+                        else if (stgIssue.Comments != githubIssue.Comments)
+                            updated = true;
 
                         //if (stgIssue.Labels != githubIssue.Labels)
                         //{
@@ -75,31 +66,33 @@ namespace AspNetDevNews.Services
                         //    updated = true;
                         //}
 
-                        if (updated)
-                            toUpdate.Add(stgIssue); 
+                        if (updated) 
+                            toUpdate.Add(githubIssue);
                     }
-
                 }
 
             }
-            if (toUpdate.Count() > 0)
-                this.StorageService.Store(toUpdate);
 
-            return toUpdate.Count(); 
+            return toUpdate; 
         }
 
-        public IEnumerable<string> Labels
+        public IList<string> Labels
         {
             get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs" }; }
         }
 
-
         public async Task<IEnumerable<string>> Repositories( string organization)  {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException("organization must be specified");
 
             return await this.GitHubService.Repositories(organization);
         }
 
-        public async Task<List<Models.Issue>> RecentIssues(string organization, string repository) {
+        public async Task<IList<Models.Issue>> RecentGitHubIssues(string organization, string repository) {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException("organization must be specified");
+            if (string.IsNullOrWhiteSpace(repository))
+                throw new ArgumentNullException("organization must be specified");
 
             try
             {
@@ -119,6 +112,22 @@ namespace AspNetDevNews.Services
                 await this.StorageService.Store(exc, null, "RecentIssues");
                 return new List<Models.Issue>();
             }
+        }
+
+        public async Task<IList<Models.Issue>> RecentStorageIssues(string organization, string repository)
+        {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException("organization must be specified");
+            if (string.IsNullOrWhiteSpace(repository))
+                throw new ArgumentNullException("organization must be specified");
+
+            return await this.StorageService.GetRecentIssues(organization, repository, this.SettingsService.Since);
+        }
+
+        public async Task Merge(IList<Models.Issue> issues) {
+            if (issues == null || issues.Count == 0)
+                return; 
+            await this.StorageService.Merge(issues);
         }
     }
 }

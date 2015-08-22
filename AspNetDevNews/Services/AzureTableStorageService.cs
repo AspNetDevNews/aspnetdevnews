@@ -148,7 +148,7 @@ namespace AspNetDevNews.Services
         }
 
 
-        public async Task<List<Models.Issue>> RemoveExisting(List<Models.Issue> issues) {
+        public async Task<IList<Models.Issue>> RemoveExisting(IList<Models.Issue> issues) {
             List<Models.Issue> result = new List<Models.Issue>();
 
             try
@@ -200,7 +200,7 @@ namespace AspNetDevNews.Services
 
         }
 
-        public async Task<IEnumerable<Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
+        public async Task<IList<Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
         {
             try
             {
@@ -255,7 +255,7 @@ namespace AspNetDevNews.Services
             }
         }
 
-        public async Task Store(List<Issue> issues)
+        public async Task Merge(IList<Issue> issues)
         {
             try
             {
@@ -264,7 +264,7 @@ namespace AspNetDevNews.Services
 
                 foreach (var issue in issues)
                 {
-                    var twittedIssue = new TwittedIssueEntity(issue.GetPartitionKey(), issue.GetRowKey());
+                    var twittedIssue = new IssueMergeEntity(issue.GetPartitionKey(), issue.GetRowKey());
                     twittedIssue.Title = issue.Title;
                     twittedIssue.UpdatedAt = issue.UpdatedAt;
                     twittedIssue.State = issue.State;

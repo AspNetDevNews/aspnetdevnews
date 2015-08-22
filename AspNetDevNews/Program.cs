@@ -19,9 +19,9 @@ namespace AspNetDevNews
 
         public static async Task Work() {
             var ghService = new IssueReceiveService();
+
             var twService = new TwitterService();
             var stgService = new AzureTableStorageService();
-            var setService = new SettingsService();
 
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;
@@ -32,11 +32,14 @@ namespace AspNetDevNews
                 checkedRepositories += repositories.Count();
                 foreach (var repository in repositories) {
                     // get recent created or modified issues
-                    var issues = await ghService.RecentIssues(organization, repository);
+                    var issues = await ghService.RecentGitHubIssues(organization, repository);
                     // get the latest issues archived
-                    var lastStored = await stgService.GetRecentIssues(organization, repository, setService.Since);
-                    // update existing
-                    ghService.UpdateExistings(issues, lastStored);
+                    var lastStored = await ghService.RecentStorageIssues(organization, repository);
+                    // check for updates
+                    var changed = await ghService.IssuesToUpdate(issues, lastStored);
+                    if (changed.Count > 0)
+                        await ghService.Merge(changed);
+
 
                     if (issues.Count() > 0) {
                         issues = await stgService.RemoveExisting(issues);
