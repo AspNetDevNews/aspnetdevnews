@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AspNetDevNews.Services.ATStorage
+namespace AspNetDevNews.Services.AzureTableStorage
 {
     public class IssueMergeEntity : TableEntity
     {
@@ -18,6 +18,6 @@ namespace AspNetDevNews.Services.ATStorage
         public string Title { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string State { get; internal set; }
-        public int Comments { get; internal set; }
+        public int ?Comments { get; internal set; }
     }
 }

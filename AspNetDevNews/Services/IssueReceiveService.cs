@@ -1,4 +1,5 @@
 ﻿using AspNetDevNews.Services.Interfaces;
+using AspNetDevNews.Services.AzureTableStorage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,21 +15,25 @@ namespace AspNetDevNews.Services
         private ITwitterService TwitterService { get; set; }
 
         public IssueReceiveService() {
-            this.GitHubService = new GitHubService();
-            this.StorageService = new AzureTableStorageService();
             this.SettingsService = new SettingsService();
-            this.TwitterService = new TwitterService();
+            this.GitHubService = new GitHubService();
+
+            this.StorageService = new AzureTableStorageService();
+//            this.StorageService = new ReadOnlyAzureStorageTableService();
+
+//            this.TwitterService = new TwitterService();
+            this.TwitterService = new ReadOnlyTwitterService();
         }
 
         public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, ITwitterService twitterService ) {
             if (gitHubService == null)
-                throw new ArgumentNullException("gitHubService cannot be null");
+                throw new ArgumentNullException(nameof(gitHubService), "gitHubService cannot be null");
             if (storageService == null)
-                throw new ArgumentNullException("storageService cannot be null");
+                throw new ArgumentNullException(nameof(storageService), "storageService cannot be null");
             if (settingsService == null)
-                throw new ArgumentNullException("settingsService cannot be null");
+                throw new ArgumentNullException(nameof(settingsService), "settingsService cannot be null");
             if (twitterService == null)
-                throw new ArgumentNullException("twitterService cannot be null");
+                throw new ArgumentNullException(nameof(twitterService), "twitterService cannot be null");
 
             this.GitHubService = gitHubService;
             this.StorageService = storageService;
@@ -80,26 +85,27 @@ namespace AspNetDevNews.Services
 
         public IList<string> Labels
         {
-            get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs" }; }
+            get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs", "up-for-grabs", "help wanted" }; }
         }
 
         public async Task<IEnumerable<string>> Repositories( string organization)  {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException("organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "organization must be specified");
 
             return await this.GitHubService.Repositories(organization);
         }
 
         public async Task<IList<Models.Issue>> RecentGitHubIssues(string organization, string repository) {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException("organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "organization must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException("repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "repository must be specified");
 
             try
             {
                 List<Models.Issue> issuesToProcess = new List<Models.Issue>();
-                foreach (var issue in await this.GitHubService.GetRecentIssues(organization, repository, this.SettingsService.Since))
+                var recentIssues = await this.GitHubService.GetRecentIssues(organization, repository, this.SettingsService.Since);
+                foreach (var issue in recentIssues)
                 {
                     foreach (var refLabel in Labels)
                     {
@@ -116,14 +122,31 @@ namespace AspNetDevNews.Services
             }
         }
 
-        public async Task<IList<Models.Issue>> RecentStorageIssues(string organization, string repository)
+        public async Task<IList<Models.Issue>> CheckInStorage(string organization, string repository, IList<Models.Issue>issuesToCheck)
         {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException("organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "organization must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException("repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "repository must be specified");
 
-            return await this.StorageService.GetRecentIssues(organization, repository, this.SettingsService.Since);
+            //return await this.StorageService.GetRecentIssues(organization, repository, this.SettingsService.Since);
+            List<string> RowKeysToScan = new List<string>();
+            foreach (var issue in issuesToCheck)
+            {
+                if (issue.Organization != organization || issue.Repository != repository)
+                    throw new ApplicationException("Can process only issues from the same repository");
+                RowKeysToScan.Add(issue.GetRowKey());
+            }
+
+            try
+            {
+                return await this.StorageService.GetBatchIssues(organization, repository, RowKeysToScan);
+            }
+            catch (Exception ex)
+            {
+                return new List<Models.Issue>();
+            }
+
         }
 
         public async Task Merge(IList<Models.Issue> issues) {
@@ -186,9 +209,9 @@ namespace AspNetDevNews.Services
 
         public async Task<int> ProcessRepository(string organization, string repository) {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException("organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "organization must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException("repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "repository must be specified");
 
             // get recent created or modified issues
             var issues = await RecentGitHubIssues(organization, repository);
@@ -196,7 +219,7 @@ namespace AspNetDevNews.Services
             if (issues == null || issues.Count == 0)
                 return 0;
             // get the latest issues archived
-            var lastStored = await RecentStorageIssues(organization, repository);
+            var lastStored = await CheckInStorage(organization, repository, issues);
             // check for updates
             var changed = await IssuesToUpdate(issues, lastStored);
             // if updated ones, merge the changes

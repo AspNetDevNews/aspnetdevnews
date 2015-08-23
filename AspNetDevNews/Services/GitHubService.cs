@@ -46,40 +46,51 @@ namespace AspNetDevNews.Services
 
         public async Task<IEnumerable<Models.Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
         {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+            if (string.IsNullOrWhiteSpace(repository))
+                throw new ArgumentNullException(nameof(repository), "repository must be specified");
+
             var client = GetClient();
             var request = new RepositoryIssueRequest();
             request.Since = since;
 
-            var queryResult = await client.Issue.GetAllForRepository(organization, repository, request);
-            var issues = new List<Octokit.Issue>();
-            foreach (var issue in queryResult)
+            try
             {
-                if (issue.PullRequest != null)
-                    continue;
+                var queryResult = await client.Issue.GetAllForRepository(organization, repository, request);
+                var issues = new List<Octokit.Issue>();
+                foreach (var issue in queryResult)
+                {
+                    if (issue.PullRequest != null)
+                        continue;
 
-                issues.Add(issue);
+                    issues.Add(issue);
+                }
+                var issuesToProcess = new List<Models.Issue>();
+                foreach (var issue in issues)
+                {
+                    var issueToProcess = new Models.Issue();
+                    issueToProcess.Title = issue.Title;
+                    issueToProcess.Url = issue.HtmlUrl.ToString();
+                    issueToProcess.Labels = issue.Labels.Select(lab => lab.Name).ToArray();
+                    issueToProcess.Organization = organization;
+                    issueToProcess.Repository = repository;
+                    issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
+                    issueToProcess.Number = issue.Number;
+                    issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
+                    issueToProcess.Body = issue.Body;
+                    issueToProcess.State = issue.State == 0 ? "Open" : "Closed";
+                    issueToProcess.Comments = issue.Comments;
+
+
+                    issuesToProcess.Add(issueToProcess);
+                }
+
+                return issuesToProcess;
             }
-            var issuesToProcess = new List<Models.Issue>();
-            foreach (var issue in issues)
-            {
-                var issueToProcess = new Models.Issue();
-                issueToProcess.Title = issue.Title;
-                issueToProcess.Url = issue.HtmlUrl.ToString();
-                issueToProcess.Labels = issue.Labels.Select(lab => lab.Name).ToArray();
-                issueToProcess.Organization = organization;
-                issueToProcess.Repository = repository;
-                issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
-                issueToProcess.Number = issue.Number;
-                issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
-                issueToProcess.Body = issue.Body;
-                issueToProcess.State = issue.State == 0 ? "Open" : "Closed";
-                issueToProcess.Comments = issue.Comments;
-
-
-                issuesToProcess.Add(issueToProcess);
+            catch (Exception exc) {
+                return new List<Models.Issue>();
             }
-
-            return issuesToProcess;
         }
     }
 }

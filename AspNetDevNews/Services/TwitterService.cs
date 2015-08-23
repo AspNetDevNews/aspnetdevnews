@@ -1,5 +1,6 @@
 ﻿using AspNetDevNews.Models;
 using AspNetDevNews.Services.Interfaces;
+using AspNetDevNews.Services.AzureTableStorage;
 using LinqToTwitter;
 using System;
 using System.Collections.Generic;
@@ -62,6 +63,7 @@ namespace AspNetDevNews.Services
 
                         twittedIssue.StatusID = tweet.StatusID;
                         twittedIssue.Body = issue.Body;
+                        twittedIssue.Comments = issue.Comments;
 
                         twittedIssues.Add(twittedIssue);
                     }

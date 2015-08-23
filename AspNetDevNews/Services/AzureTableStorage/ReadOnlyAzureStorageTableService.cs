@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AspNetDevNews.Test.Support
+namespace AspNetDevNews.Services.AzureTableStorage
 {
     public class ReadOnlyAzureStorageTableService : IStorageService
     {

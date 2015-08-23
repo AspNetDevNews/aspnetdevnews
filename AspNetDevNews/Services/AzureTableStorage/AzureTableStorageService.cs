@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using AspNetDevNews.Models;
 using LinqToTwitter;
 
-namespace AspNetDevNews.Services
+namespace AspNetDevNews.Services.AzureTableStorage
 {
     public class AzureTableStorageService: IStorageService
     {
@@ -147,7 +147,6 @@ namespace AspNetDevNews.Services
             }
         }
 
-
         public async Task<bool> Exists(Models.TwittedIssue issue) {
             try
             {
@@ -186,45 +185,41 @@ namespace AspNetDevNews.Services
                 issue.Organization = organization;
                 issue.Repository = repository;
 
+                string filter = "(PartitionKey eq '" + issue.GetPartitionKey() + "') and (";
+                string rowFilter = string.Empty;
+                foreach (var chiave in rowKeys) {
+                    if (!string.IsNullOrWhiteSpace(rowFilter))
+                        rowFilter += " or ";
 
-                var recentIssuesQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
-                                         where entry.PartitionKey == issue.GetPartitionKey() && rowKeys.Contains(entry.RowKey)
-                                         select entry);
-                var recentIssues = await recentIssuesQuery.ToListAsync();
+                    rowFilter = " (RowKey eq '" + chiave + "') ";
+                }
+                filter += rowFilter + ")";
 
+                TableQuery<TwittedIssueEntity> query = new TableQuery<TwittedIssueEntity>().Where(filter);
                 var results = new List<Issue>();
 
-                if (recentIssues.Any())
+                foreach (TwittedIssueEntity entity in table.ExecuteQuery(query))
                 {
-                    foreach (TwittedIssueEntity product in recentIssues)
-                    {
-                        Console.WriteLine("Product: {0} as {1} items in stock", product.Title, product.RowKey);
-                        var issues = new Issue();
-                        issue.Body = product.Body;
-                        issue.CreatedAt = product.CreatedAt;
-                        issue.Labels = product.Labels.Split(new char[] { ';' });
-                        issue.Number = Convert.ToInt32(product.RowKey);
+                    Console.WriteLine("Product: {0} as {1} items in stock", entity.Title, entity.RowKey);
+                    var issues = new Issue();
+                    issue.Body = entity.Body;
+                    issue.CreatedAt = entity.CreatedAt;
+                    issue.Labels = entity.Labels.Split(new char[] { ';' });
+                    issue.Number = Convert.ToInt32(entity.RowKey);
 
-                        var partitionFields = product.PartitionKey.Split(new char[] { '+' });
+                    var partitionFields = entity.PartitionKey.Split(new char[] { '+' });
 
-                        issue.Organization = partitionFields[0];
-                        issue.Repository = partitionFields[1];
-                        issue.Title = product.Title;
-                        issue.UpdatedAt = product.UpdatedAt;
-                        issue.Url = product.Url;
-                        issue.State = product.State;
-                        issue.Comments = product.Comments;
+                    issue.Organization = partitionFields[0];
+                    issue.Repository = partitionFields[1];
+                    issue.Title = entity.Title;
+                    issue.UpdatedAt = entity.UpdatedAt;
+                    issue.Url = entity.Url;
+                    issue.State = entity.State;
+                    issue.Comments = entity.Comments != null ? entity.Comments.Value : 0;
 
-                        results.Add(issue);
-                    }
-                    return results;
+                    results.Add(issue);
                 }
-                else
-                {
-                    Console.WriteLine("No inventory was not found.  Better order more!");
-                    return new List<Models.Issue>();
-                }
-
+                return results;
             }
             catch (Exception ex)
             {
@@ -243,11 +238,13 @@ namespace AspNetDevNews.Services
                 issue.Organization = organization;
                 issue.Repository = repository;
 
+                var partitionKey = issue.GetPartitionKey();
 
                 var recentIssuesQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
-                    where entry.PartitionKey == issue.GetPartitionKey() && entry.CreatedAt > since.DateTime
+                    where entry.PartitionKey == partitionKey && entry.CreatedAt > since.DateTime
                                               select entry);
-                var recentIssues = await recentIssuesQuery.ToListAsync();
+                // using async method raises an exception
+                var recentIssues = recentIssuesQuery.ToList();
 
                 var results = new List<Issue>();
 
@@ -270,7 +267,7 @@ namespace AspNetDevNews.Services
                         issue.UpdatedAt = product.UpdatedAt;
                         issue.Url = product.Url;
                         issue.State = product.State;
-                        issue.Comments = product.Comments;
+                        issue.Comments = product.Comments != null ? product.Comments.Value : 0;
 
                         results.Add(issue);
                     }
@@ -303,17 +300,18 @@ namespace AspNetDevNews.Services
                     twittedIssue.UpdatedAt = issue.UpdatedAt;
                     twittedIssue.State = issue.State;
                     twittedIssue.Comments = issue.Comments;
+                    twittedIssue.ETag = "*";
 
                     //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
-                    //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
-                    //await table.ExecuteAsync(insertOperation);
-                    batchOperation.Merge(twittedIssue);
+                    TableOperation insertOperation = TableOperation.Merge(twittedIssue);
+                    var result = await table.ExecuteAsync(insertOperation);
+                    //batchOperation.Merge(twittedIssue);
 
                 }
-                if (batchOperation.Count() > 0)
-                {
-                    var result = await table.ExecuteBatchAsync(batchOperation);
-                }
+                //if (batchOperation.Count() > 0)
+                //{
+                //    var result = await table.ExecuteBatchAsync(batchOperation);
+                //}
             }
             catch (Exception ex)
             {

@@ -1,4 +1,5 @@
 ﻿using AspNetDevNews.Services;
+using AspNetDevNews.Services.AzureTableStorage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +35,7 @@ namespace AspNetDevNews
                     if (issues == null || issues.Count == 0)
                         continue;
                     // get the latest issues archived
-                    var lastStored = await ghService.RecentStorageIssues(organization, repository);
+                    var lastStored = await ghService.CheckInStorage(organization, repository, issues);
                     // check for updates
                     var changed = await ghService.IssuesToUpdate(issues, lastStored);
                     // if updated ones, merge the changes
@@ -54,5 +55,6 @@ namespace AspNetDevNews
             var stgService = new AzureTableStorageService();
             await stgService.ReportExection(dtInizio, dtFine, twitted, checkedRepositories);
         }
+
     }
 }

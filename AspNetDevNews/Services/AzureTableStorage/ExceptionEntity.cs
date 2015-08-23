@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AspNetDevNews.Services.ATStorage
+namespace AspNetDevNews.Services.AzureTableStorage
 {
     public class ExceptionEntity : TableEntity
     {
