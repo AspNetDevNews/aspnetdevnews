@@ -21,8 +21,8 @@ namespace AspNetDevNews.Services
             this.StorageService = new AzureTableStorageService();
 //            this.StorageService = new ReadOnlyAzureStorageTableService();
 
-//            this.TwitterService = new TwitterService();
-            this.TwitterService = new ReadOnlyTwitterService();
+            this.TwitterService = new TwitterService();
+//            this.TwitterService = new ReadOnlyTwitterService();
         }
 
         public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, ITwitterService twitterService ) {
@@ -85,7 +85,7 @@ namespace AspNetDevNews.Services
 
         public IList<string> Labels
         {
-            get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs", "up-for-grabs", "help wanted" }; }
+            get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs", "up-for-grabs", "help wanted", "feedback-requested" }; }
         }
 
         public async Task<IEnumerable<string>> Repositories( string organization)  {
@@ -164,14 +164,12 @@ namespace AspNetDevNews.Services
             var organization = issues[0].Organization;
             var repository = issues[0].Repository;
 
+            List<string> RowKeysToScan = new List<string>();
             foreach (var issue in issues) {
                 if (issue.Organization != organization || issue.Repository != repository)
                     throw new ApplicationException("Can process only issues from the same repository");
-            }
-
-            List <string> RowKeysToScan = new List<string>();
-            foreach (var issue in issues)
                 RowKeysToScan.Add(issue.GetRowKey());
+            }
 
             try
             {

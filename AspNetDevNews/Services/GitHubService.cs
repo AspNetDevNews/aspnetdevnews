@@ -92,5 +92,18 @@ namespace AspNetDevNews.Services
                 return new List<Models.Issue>();
             }
         }
+
+        public async Task GetRecentReleases(string organization, string repository) {
+            var client = GetClient();
+
+            var merged = new List<Release>();
+            var releases = await client.Release.GetAll( organization, repository);
+
+            foreach (var release in releases) {
+            }
+
+            foreach (var merge in merged) {
+            }
+        }
     }
 }

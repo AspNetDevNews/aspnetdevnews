@@ -1,4 +1,4 @@
-﻿using AspNetDevNews.Services.ATStorage;
+﻿using AspNetDevNews.Services.AzureTableStorage;
 using AspNetDevNews.Services.Interfaces;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
@@ -44,6 +44,17 @@ namespace AspNetDevNews.Services.AzureTableStorage
             CloudTableClient client = GetClient();
 
             CloudTable table = client.GetTableReference("twittedIssues");
+
+            table.CreateIfNotExists();
+            return table;
+        }
+
+        private CloudTable GetLinksTable()
+        {
+            CloudTableClient client = GetClient();
+
+            CloudTable table = client.GetTableReference("twittedLinks");
+
             table.CreateIfNotExists();
             return table;
         }
@@ -67,6 +78,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
         }
 
         public async Task Store(IList<Models.TwittedIssue> issues) {
+            if (issues == null)
+                return;
 
             try
             {
@@ -80,21 +93,22 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     twittedIssue.Labels = string.Join(";", issue.Labels);
                     twittedIssue.CreatedAt = issue.CreatedAt;
                     twittedIssue.UpdatedAt = issue.UpdatedAt;
-                    twittedIssue.TweetId = issue.StatusID;
+                    twittedIssue.StatusId = issue.StatusID.ToString(); // I have to save as string because
                     twittedIssue.Body = issue.Body;
                     twittedIssue.TwittedAt = DateTime.Now;
                     twittedIssue.State = issue.State;
                     twittedIssue.Comments = issue.Comments;
 
-                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                    TableOperation insertOperation = TableOperation.Insert(twittedIssue);
                     //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
                     //await table.ExecuteAsync(insertOperation);
-                    batchOperation.Insert(twittedIssue);
+                    table.Execute(insertOperation);
+                    //batchOperation.Insert(twittedIssue);
 
                 }
-                if (batchOperation.Count() > 0) { 
-                    var result = await table.ExecuteBatchAsync(batchOperation);
-                }
+                //if (batchOperation.Count() > 0) { 
+                //    var result = await table.ExecuteBatchAsync(batchOperation);
+                //}
             }
             catch (Exception ex)
             {
@@ -125,7 +139,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
-        public async Task ReportExection(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories)
+        public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues)
         {
 
             try
@@ -137,6 +151,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 Report.StartedAt = StartedAt;
                 Report.TwittedIsseues = TwittedIssues;
                 Report.CheckedRepositories = CheckedRepositories;
+                Report.UpdatedIssues = updatedIssues;
 
                 TableOperation insertOperation = TableOperation.Insert(Report);
                 var result = await table.ExecuteAsync(insertOperation);
@@ -176,32 +191,64 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         }
 
+        public async Task<T> GetRecord<T>(string partitionKey, string rowKey) where T : ITableEntity
+        {
+            try
+            {
+                var table = GetIssuesTable();
+
+                TableOperation retrieveOperation = TableOperation.Retrieve<T>(partitionKey, rowKey);
+
+                TableResult query = await table.ExecuteAsync(retrieveOperation);
+
+                if (query.Result != null)
+                {
+                    //Console.WriteLine("Product: {0}", ((T)query.Result).Title);
+                    return (T)query.Result;
+                }
+                else
+                {
+                    Console.WriteLine("The Product was not found.");
+                    return default(T);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return default(T);
+            }
+
+        }
+
+
         public async Task<IList<Issue>> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
         {
             try
             {
                 var table = GetIssuesTable();
-                var issue = new Models.Issue();
-                issue.Organization = organization;
-                issue.Repository = repository;
+                var dummy = new Issue();
+                dummy.Organization = organization;
+                dummy.Repository = repository;
 
-                string filter = "(PartitionKey eq '" + issue.GetPartitionKey() + "') and (";
+                string filter = "(PartitionKey eq '" + dummy.GetPartitionKey() + "') and (";
                 string rowFilter = string.Empty;
                 foreach (var chiave in rowKeys) {
                     if (!string.IsNullOrWhiteSpace(rowFilter))
                         rowFilter += " or ";
 
-                    rowFilter = " (RowKey eq '" + chiave + "') ";
+                    rowFilter += " (RowKey eq '" + chiave + "') ";
                 }
                 filter += rowFilter + ")";
 
                 TableQuery<TwittedIssueEntity> query = new TableQuery<TwittedIssueEntity>().Where(filter);
                 var results = new List<Issue>();
-
-                foreach (TwittedIssueEntity entity in table.ExecuteQuery(query))
+                
+                var alreadyStored = table.ExecuteQuery(query);
+                foreach (TwittedIssueEntity entity in alreadyStored)
                 {
                     Console.WriteLine("Product: {0} as {1} items in stock", entity.Title, entity.RowKey);
-                    var issues = new Issue();
+                    var issue = new Issue();
                     issue.Body = entity.Body;
                     issue.CreatedAt = entity.CreatedAt;
                     issue.Labels = entity.Labels.Split(new char[] { ';' });
@@ -215,7 +262,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     issue.UpdatedAt = entity.UpdatedAt;
                     issue.Url = entity.Url;
                     issue.State = entity.State;
-                    issue.Comments = entity.Comments != null ? entity.Comments.Value : 0;
+                    issue.Comments = entity.Comments;
 
                     results.Add(issue);
                 }
@@ -267,7 +314,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                         issue.UpdatedAt = product.UpdatedAt;
                         issue.Url = product.Url;
                         issue.State = product.State;
-                        issue.Comments = product.Comments != null ? product.Comments.Value : 0;
+                        issue.Comments = product.Comments;
 
                         results.Add(issue);
                     }
@@ -303,15 +350,15 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     twittedIssue.ETag = "*";
 
                     //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
-                    TableOperation insertOperation = TableOperation.Merge(twittedIssue);
-                    var result = await table.ExecuteAsync(insertOperation);
-                    //batchOperation.Merge(twittedIssue);
+                    //TableOperation insertOperation = TableOperation.Merge(twittedIssue);
+                    //var result = await table.ExecuteAsync(insertOperation);
+                    batchOperation.Merge(twittedIssue);
 
                 }
-                //if (batchOperation.Count() > 0)
-                //{
-                //    var result = await table.ExecuteBatchAsync(batchOperation);
-                //}
+                if (batchOperation.Count() > 0)
+                {
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
             }
             catch (Exception ex)
             {

@@ -5,13 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AspNetDevNews.Services.ATStorage
+namespace AspNetDevNews.Services.AzureTableStorage
 {
     public class TwittedIssueEntity : TableEntity
     {
         public TwittedIssueEntity(string orgRepository, string issueNumber)
             : base(orgRepository, issueNumber)
-        { }
+        {
+        }
 
         public TwittedIssueEntity() { }
 
@@ -20,10 +21,10 @@ namespace AspNetDevNews.Services.ATStorage
         public string Labels { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public ulong TweetId { get; set; }
+        public string StatusId { get; set; }
         public string Body { get; set; }
         public DateTime TwittedAt { get; set; }
-        public string State { get; internal set; }
-        public int ?Comments { get; internal set; }
+        public string State { get; set; }
+        public int Comments { get; set; }
     }
 }

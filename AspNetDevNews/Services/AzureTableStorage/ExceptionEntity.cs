@@ -11,7 +11,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
     {
         public ExceptionEntity(string operation, string timestamp)
             : base(operation, timestamp)
-        { }
+        {
+        }
 
         public ExceptionEntity() { }
 
@@ -20,6 +21,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
         public string Operation { get; set; }
         public string TwitPartitionKey { get; set; }
         public string TwitRowKey { get; set; }
+        public ulong TweetId { get; set; }
+
     }
 
 }

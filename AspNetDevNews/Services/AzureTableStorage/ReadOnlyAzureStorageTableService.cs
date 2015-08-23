@@ -1,6 +1,7 @@
 ﻿using AspNetDevNews.Models;
 using AspNetDevNews.Services;
 using AspNetDevNews.Services.Interfaces;
+using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,7 +37,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
         }
 
         #region Store methods do nothing
-        public async Task ReportExection(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories)
+        public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues)
         {
             return;
         }

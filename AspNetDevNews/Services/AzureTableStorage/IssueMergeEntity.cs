@@ -17,7 +17,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         public string Title { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public string State { get; internal set; }
-        public int ?Comments { get; internal set; }
+        public string State { get; set; }
+        public int ?Comments { get; set; }
     }
 }

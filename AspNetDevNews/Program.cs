@@ -1,5 +1,6 @@
 ﻿using AspNetDevNews.Services;
 using AspNetDevNews.Services.AzureTableStorage;
+using AspNetDevNews.Services.Feeds;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,18 @@ namespace AspNetDevNews
     {
         static void Main(string[] args)
         {
+           
+//            Merges().Wait();
             Work().Wait();
+        }
+
+        public static async Task Merges()
+        {
+            var feedService = new FeedReaderService();
+            await feedService.ReadFeeds();
+
+            //var gitHubService = new GitHubService();
+            //await gitHubService.GetRecentMerges("aspnet", "Docs", "aspnet:master");
         }
 
         public static async Task Work() {
@@ -24,36 +36,38 @@ namespace AspNetDevNews
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;
             int checkedRepositories = 0;
+            int updated = 0;
 
             foreach (var organization in ghService.Organizations) {
                 var repositories = await ghService.Repositories(organization);
                 checkedRepositories += repositories.Count();
                 foreach (var repository in repositories) {
                     // get recent created or modified issues
-                    var issues = await ghService.RecentGitHubIssues(organization, repository);
+                    var gitHubIssues = await ghService.RecentGitHubIssues(organization, repository);
                     // if no issues are reported from github, go next repository
-                    if (issues == null || issues.Count == 0)
+                    if (gitHubIssues == null || gitHubIssues.Count == 0)
                         continue;
                     // get the latest issues archived
-                    var lastStored = await ghService.CheckInStorage(organization, repository, issues);
+                    var storageIssues = await ghService.CheckInStorage(organization, repository, gitHubIssues);
                     // check for updates
-                    var changed = await ghService.IssuesToUpdate(issues, lastStored);
+                    var changed = await ghService.IssuesToUpdate(gitHubIssues, storageIssues);
                     // if updated ones, merge the changes
                     await ghService.Merge(changed);
                     // remove from the list the ones already in the storage, keeping just the ones 
                     // I have to tweet and store
-                    issues = await ghService.RemoveExisting(issues);
+                    gitHubIssues = await ghService.RemoveExisting(gitHubIssues);
                     // publish the new issues
-                    var twittedIssues = await ghService.PublishNewIssues(issues);
+                    var twittedIssues = await ghService.PublishNewIssues(gitHubIssues);
                     // store in the storage the data about the new issues
                     await ghService.StorePublishedIssues(twittedIssues);
+                    updated += changed.Count;
                     twitted += twittedIssues.Count;
                 }
             }
 
             DateTime dtFine = DateTime.Now;
             var stgService = new AzureTableStorageService();
-            await stgService.ReportExection(dtInizio, dtFine, twitted, checkedRepositories);
+            await stgService.ReportExecution(dtInizio, dtFine, twitted, checkedRepositories, updated);
         }
 
     }

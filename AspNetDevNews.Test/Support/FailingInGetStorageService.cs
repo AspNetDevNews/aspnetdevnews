@@ -33,7 +33,7 @@ namespace AspNetDevNews.Test.Support
         }
 
         #region Store methods do nothing
-        public async Task ReportExection(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories)
+        public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues)
         {
             return;
         }

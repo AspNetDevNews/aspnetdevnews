@@ -21,6 +21,11 @@ namespace AspNetDevNews.Test.Support
             throw new NotImplementedException();
         }
 
+        public Task GetRecentReleases(string organization, string repository)
+        {
+            throw new NotImplementedException();
+        }
+
         public DummyGitHubService() {
             RecentIssues = new List<Issue>();
         }
