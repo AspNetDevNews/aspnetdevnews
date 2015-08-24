@@ -5,7 +5,8 @@ using AspNetDevNews.Services;
 using AspNetDevNews.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AspNetDevNews.Test.Support;
+using Moq;
+using AspNetDevNews.Services.AzureTableStorage;
 
 namespace AspNetDevNews.Test
 {
@@ -16,42 +17,37 @@ namespace AspNetDevNews.Test
         {
             var ghService = new IssueReceiveService(
                 gitHubService: gitHubService,
-                storageService: new DummyStorageService(),
-                settingsService: new OneDaySettings(),
-                twitterService: new DummyTwitterService());
+                storageService: new AzureTableStorageService(),
+                settingsService: new SettingsService(),
+                twitterService: new TwitterService());
             return ghService;
-        }
-
-        private IssueReceiveService GetService() {
-            var dummyGutHubService = new DummyGitHubService();
-            return GetService(dummyGutHubService);
         }
 
         [TestMethod,ExpectedException(typeof(ArgumentNullException)), TestCategory("RecentGitHubIssues")]
         public async Task OrganizationParameterCannotBeEmpty()
         {
-            var ghService = this.GetService();
+            var ghService = new IssueReceiveService();
             var issues = await ghService.RecentGitHubIssues("", ".");
         }
 
         [TestMethod, ExpectedException(typeof(ArgumentNullException)), TestCategory("RecentGitHubIssues")]
         public async Task RepositoryParameterCannotBeEmpty()
         {
-            var ghService = this.GetService();
+            var ghService = new IssueReceiveService();
             var issues = await ghService.RecentGitHubIssues(".", "");
         }
 
         [TestMethod, ExpectedException(typeof(ArgumentNullException)), TestCategory("RecentGitHubIssues")]
         public async Task OrganizationParameterCannotBeNull()
         {
-            var ghService = this.GetService();
+            var ghService = new IssueReceiveService();
             var issues = await ghService.RecentGitHubIssues(null, ".");
         }
 
         [TestMethod, ExpectedException(typeof(ArgumentNullException)), TestCategory("RecentGitHubIssues")]
         public async Task RepositoryParameterCannotBeNull()
         {
-            var ghService = this.GetService();
+            var ghService = new IssueReceiveService();
             var issues = await ghService.RecentGitHubIssues(".", null);
         }
 
@@ -59,12 +55,18 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IssuesWithAtLeastOneLabelAreOk()
         {
-            var dummyGutHubService = new DummyGitHubService();
-            var ghService = GetService( dummyGutHubService );
+            //var dummyGutHubService = new DummyGitHubService();
+            //var ghService = GetService( dummyGutHubService );
+            var serviceForLabels = new IssueReceiveService();
 
-            foreach (var label in ghService.Labels) {
-                dummyGutHubService.RecentIssues = new List<Issue>();
-                dummyGutHubService.RecentIssues.Add(new Issue { Labels = new[] { label } } );
+            foreach (var label in serviceForLabels.Labels) {
+                var recentIssues = new List<Issue>();
+                recentIssues.Add(new Issue { Labels = new[] { label } } );
+
+                var gitMock = new Mock<IGitHubService>();
+                gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(recentIssues);
+                var ghService = this.GetService(gitMock.Object);
+
                 var issues = await ghService.RecentGitHubIssues(".", ".");
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(1,issues.Count);
@@ -74,10 +76,16 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IssuesWithOtherLabelAreKo()
         {
-            var dummyGutHubService = new DummyGitHubService();
-            var ghService = GetService(dummyGutHubService);
+            //var dummyGutHubService = new DummyGitHubService();
+            //var ghService = GetService(dummyGutHubService);
 
-            dummyGutHubService.RecentIssues.Add(new Issue { Labels = new[] { "pippo" } });
+            var recentIssues = new List<Issue>();
+            recentIssues.Add(new Issue { Labels = new[] { "pippo" } });
+
+            var gitMock = new Mock<IGitHubService>();
+            gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(recentIssues);
+            var ghService = this.GetService(gitMock.Object);
+
             var issues = await ghService.RecentGitHubIssues(".", ".");
             Assert.IsNotNull(issues);
             Assert.AreEqual(0, issues.Count);
@@ -86,10 +94,16 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IssuesWithNoLabelAreKo()
         {
-            var dummyGutHubService = new DummyGitHubService();
-            var ghService = GetService(dummyGutHubService);
+            //var dummyGutHubService = new DummyGitHubService();
+            //var ghService = GetService(dummyGutHubService);
 
-            dummyGutHubService.RecentIssues.Add(new Issue { Labels = new string[] { } });
+            var recentIssues = new List<Issue>();
+            recentIssues.Add(new Issue { Labels = new string[] { } });
+
+            var gitMock = new Mock<IGitHubService>();
+            gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(recentIssues);
+            var ghService = this.GetService(gitMock.Object);
+
             var issues = await ghService.RecentGitHubIssues(".", ".");
             Assert.IsNotNull(issues);
             Assert.AreEqual(0, issues.Count);
@@ -98,10 +112,16 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IfFailingInGetIssuesReturnsEmptyList()
         {
-            var dummyGutHubService = new DummyGitHubService();
-            var ghService = GetService(dummyGutHubService);
+            //var dummyGutHubService = new DummyGitHubService();
+            //var ghService = GetService(dummyGutHubService);
 
-            dummyGutHubService.RecentIssues.Add(new Issue { Labels = new string[] { } });
+            var recentIssues = new List<Issue>();
+            recentIssues.Add(new Issue { Labels = new string[] { } });
+
+            var gitMock = new Mock<IGitHubService>();
+            gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).Throws(new ApplicationException());
+            var ghService = this.GetService(gitMock.Object);
+
             var issues = await ghService.RecentGitHubIssues(".", ".");
             Assert.IsNotNull(issues);
             Assert.AreEqual(0, issues.Count);
@@ -110,14 +130,19 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IfOneOkAndOneKoJustOneIsReturned()
         {
-            var dummyGutHubService = new DummyGitHubService();
-            var ghService = GetService(dummyGutHubService);
+            //var dummyGutHubService = new DummyGitHubService();
+            //var ghService = GetService(dummyGutHubService);
+            var serviceForLabels = new IssueReceiveService();
 
-            foreach (var label in ghService.Labels)
+            foreach (var label in serviceForLabels.Labels)
             {
-                dummyGutHubService.RecentIssues = new List<Issue>();
-                dummyGutHubService.RecentIssues.Add(new Issue { Title = "Ok", Labels = new[] { label } });
-                dummyGutHubService.RecentIssues.Add(new Issue { Title = "Ko", Labels = new[] { "pippo" } });
+                var recentIssues = new List<Issue>();
+                recentIssues.Add(new Issue { Title = "Ok", Labels = new[] { label } });
+                recentIssues.Add(new Issue { Title = "Ko", Labels = new[] { "pippo" } });
+
+                var gitMock = new Mock<IGitHubService>();
+                gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).ReturnsAsync(recentIssues);
+                var ghService = this.GetService(gitMock.Object);
 
                 var issues = await ghService.RecentGitHubIssues(".", ".");
                 Assert.IsNotNull(issues);

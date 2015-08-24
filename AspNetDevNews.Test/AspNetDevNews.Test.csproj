@@ -35,6 +35,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Moq, Version=4.2.1507.118, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
+      <HintPath>..\packages\Moq.4.2.1507.0118\lib\net40\Moq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -53,13 +57,9 @@
     <Compile Include="IssuesToUpdate.cs" />
     <Compile Include="RecentGitHubIssues.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RemoveExisting.cs" />
-    <Compile Include="Support\DummyTwitterService.cs" />
-    <Compile Include="Support\DummyGitHubService.cs" />
-    <Compile Include="Support\FailingInGetStorageService.cs" />
-    <Compile Include="Support\DummyStorageService.cs" />
-    <Compile Include="Support\FailingInGetGitHubService.cs" />
-    <Compile Include="Support\OneDaySettings.cs" />
+    <Compile Include="CheckInStorage.cs" />
+    <Compile Include="RemoveExistingFeeds.cs" />
+    <Compile Include="RemoveExistingIssues.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AspNetDevNews\AspNetDevNews.csproj">
@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

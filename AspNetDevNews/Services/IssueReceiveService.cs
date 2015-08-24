@@ -136,6 +136,8 @@ namespace AspNetDevNews.Services
                 throw new ArgumentNullException(nameof(organization), "organization must be specified");
             if (string.IsNullOrWhiteSpace(repository))
                 throw new ArgumentNullException(nameof(repository), "repository must be specified");
+            if (issuesToCheck == null || issuesToCheck.Count == 0)
+                return new List<Models.Issue>();
 
             //return await this.StorageService.GetRecentIssues(organization, repository, this.SettingsService.Since);
             List<string> RowKeysToScan = new List<string>();
