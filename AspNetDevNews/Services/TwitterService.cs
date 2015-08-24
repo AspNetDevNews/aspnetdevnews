@@ -50,20 +50,22 @@ namespace AspNetDevNews.Services
                     {
                         var tweet = await twitterCtx.TweetAsync(issue.GetTwitterText());
 
-                        var twittedIssue = new TwittedIssue();
+                        //var twittedIssue = new TwittedIssue();
 
-                        twittedIssue.Title = issue.Title;
-                        twittedIssue.Url = issue.Url;
-                        twittedIssue.Labels = issue.Labels;
-                        twittedIssue.Organization = issue.Organization;
-                        twittedIssue.Repository = issue.Repository;
-                        twittedIssue.CreatedAt = issue.CreatedAt;
-                        twittedIssue.Number = issue.Number;
-                        twittedIssue.UpdatedAt = issue.UpdatedAt;
+                        //twittedIssue.Title = issue.Title;
+                        //twittedIssue.Url = issue.Url;
+                        //twittedIssue.Labels = issue.Labels;
+                        //twittedIssue.Organization = issue.Organization;
+                        //twittedIssue.Repository = issue.Repository;
+                        //twittedIssue.CreatedAt = issue.CreatedAt;
+                        //twittedIssue.Number = issue.Number;
+                        //twittedIssue.UpdatedAt = issue.UpdatedAt;
 
+                        //twittedIssue.StatusID = tweet.StatusID;
+                        //twittedIssue.Body = issue.Body;
+                        //twittedIssue.Comments = issue.Comments;
+                        var twittedIssue = AutoMapper.Mapper.Map<TwittedIssue>(issue);
                         twittedIssue.StatusID = tweet.StatusID;
-                        twittedIssue.Body = issue.Body;
-                        twittedIssue.Comments = issue.Comments;
 
                         twittedIssues.Add(twittedIssue);
                     }
@@ -96,15 +98,18 @@ namespace AspNetDevNews.Services
                     {
                         var tweet = await twitterCtx.TweetAsync(post.GetTwitterText());
 
-                        var twittedIssue = new TwittedPost();
+                        //var twittedIssue = new TwittedPost();
 
-                        twittedIssue.Title = post.Title;
-                        twittedIssue.Id = post.Id;
-                        twittedIssue.PublishDate = post.PublishDate;
-                        twittedIssue.Summary = post.Summary;
-                        twittedIssue.Title = post.Title;
+                        //twittedIssue.Title = post.Title;
+                        //twittedIssue.Id = post.Id;
+                        //twittedIssue.PublishDate = post.PublishDate;
+                        //twittedIssue.Summary = post.Summary;
+                        //twittedIssue.Title = post.Title;
+                        //twittedIssue.StatusID = tweet.StatusID;
+                        //twittedIssue.Feed = post.Feed;
+
+                        var twittedIssue = AutoMapper.Mapper.Map<TwittedPost>(post);
                         twittedIssue.StatusID = tweet.StatusID;
-                        twittedIssue.Feed = post.Feed;
 
                         twittedIssues.Add(twittedIssue);
                     }

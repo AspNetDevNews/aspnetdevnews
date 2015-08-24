@@ -32,18 +32,19 @@ namespace AspNetDevNews.Services.Feeds
             foreach (var item in feed.Items) {
                 try
                 {
-                    var mioItem = new FeedItem();
-                    if (item.Id.ToLower().StartsWith("http"))
-                        mioItem.Id = item.Id;
-                    else if (item.Links.Count > 0)
-                        mioItem.Id = item.Links[0].Uri.ToString();
-                    if (item.PublishDate.Year != 1)
-                        mioItem.PublishDate = item.PublishDate.DateTime;
-                    else
-                        mioItem.PublishDate = item.LastUpdatedTime.DateTime;
-                    mioItem.Summary = item.Summary?.Text;
-                    mioItem.Title = item.Title.Text;
-                    mioItem.Feed = feedUrl;
+                    //var mioItem = new FeedItem();
+                    //if (item.Id.ToLower().StartsWith("http"))
+                    //    mioItem.Id = item.Id;
+                    //else if (item.Links.Count > 0)
+                    //    mioItem.Id = item.Links[0].Uri.ToString();
+                    //if (item.PublishDate.Year != 1)
+                    //    mioItem.PublishDate = item.PublishDate.DateTime;
+                    //else
+                    //    mioItem.PublishDate = item.LastUpdatedTime.DateTime;
+                    //mioItem.Summary = item.Summary?.Text;
+                    //mioItem.Title = item.Title.Text;
+                    //mioItem.Feed = feedUrl;
+                    var mioItem = AutoMapper.Mapper.Map<FeedItem>(item);
 
                     if (mioItem.PublishDate > this.Settings.Since)
                         result.Add(mioItem);

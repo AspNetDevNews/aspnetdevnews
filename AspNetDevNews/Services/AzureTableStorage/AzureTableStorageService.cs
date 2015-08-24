@@ -34,9 +34,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
             return client;
         }
 
-        public enum Tables { Issues, Exception, Executions }
-
-        private CloudTable GetIssuesTable() {
+        #region get Storage Tables
+        private CloudTable GetIssuesTable()
+        {
             CloudTableClient client = GetClient();
 
             CloudTable table = client.GetTableReference("twittedIssues");
@@ -73,6 +73,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             return table;
         }
 
+        #endregion
         public async Task Store(IList<TwittedIssue> issues) {
             if (issues == null || issues.Count == 0)
                 return;
@@ -83,18 +84,20 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 TableBatchOperation batchOperation = new TableBatchOperation();
 
                 foreach (var issue in issues) {
-                    var twittedIssue = new TwittedIssueEntity(issue.GetPartitionKey(), issue.GetRowKey());
-                    twittedIssue.Title = issue.Title;
-                    twittedIssue.Url = issue.Url;
-                    twittedIssue.Labels = string.Join(";", issue.Labels);
-                    twittedIssue.CreatedAt = issue.CreatedAt;
-                    twittedIssue.UpdatedAt = issue.UpdatedAt;
-                    twittedIssue.StatusId = issue.StatusID.ToString(); // I have to save as string because
-                    twittedIssue.Body = issue.Body;
-                    twittedIssue.TwittedAt = DateTime.Now;
-                    twittedIssue.State = issue.State;
-                    twittedIssue.Comments = issue.Comments;
+                    // using automap
+                    //var twittedIssue = new TwittedIssueEntity(issue.GetPartitionKey(), issue.GetRowKey());
+                    //twittedIssue.Title = issue.Title;
+                    //twittedIssue.Url = issue.Url;
+                    //twittedIssue.Labels = string.Join(";", issue.Labels);
+                    //twittedIssue.CreatedAt = issue.CreatedAt;
+                    //twittedIssue.UpdatedAt = issue.UpdatedAt;
+                    //twittedIssue.StatusId = issue.StatusID.ToString(); // I have to save as string because
+                    //twittedIssue.Body = issue.Body;
+                    //twittedIssue.TwittedAt = DateTime.Now;
+                    //twittedIssue.State = issue.State;
+                    //twittedIssue.Comments = issue.Comments;
 
+                    var twittedIssue = AutoMapper.Mapper.Map<TwittedIssueEntity>(issue);
                     //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
                     //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
                     //await table.ExecuteAsync(insertOperation);
@@ -102,9 +105,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     batchOperation.Insert(twittedIssue);
 
                 }
-                if (batchOperation.Count() > 0) { 
-                    var result = await table.ExecuteBatchAsync(batchOperation);
-                }
+                if (batchOperation.Count() > 0)  
+                    await table.ExecuteBatchAsync(batchOperation);
             }
             catch (Exception ex)
             {
@@ -247,22 +249,24 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 var alreadyStored = table.ExecuteQuery(query);
                 foreach (TwittedIssueEntity entity in alreadyStored)
                 {
-                    Console.WriteLine("Product: {0} as {1} items in stock", entity.Title, entity.RowKey);
-                    var issue = new Issue();
-                    issue.Body = entity.Body;
-                    issue.CreatedAt = entity.CreatedAt;
-                    issue.Labels = entity.Labels.Split(new char[] { ';' });
-                    issue.Number = Convert.ToInt32(entity.RowKey);
+                    // using AutoMapper
+                    //var issue = new Issue();
+                    //issue.Body = entity.Body;
+                    //issue.CreatedAt = entity.CreatedAt;
+                    //issue.Labels = entity.Labels.Split(new char[] { ';' });
+                    //issue.Number = Convert.ToInt32(entity.RowKey);
 
-                    var partitionFields = entity.PartitionKey.Split(new char[] { '+' });
+                    //var partitionFields = entity.PartitionKey.Split(new char[] { '+' });
 
-                    issue.Organization = partitionFields[0];
-                    issue.Repository = partitionFields[1];
-                    issue.Title = entity.Title;
-                    issue.UpdatedAt = entity.UpdatedAt;
-                    issue.Url = entity.Url;
-                    issue.State = entity.State;
-                    issue.Comments = entity.Comments;
+                    //issue.Organization = partitionFields[0];
+                    //issue.Repository = partitionFields[1];
+                    //issue.Title = entity.Title;
+                    //issue.UpdatedAt = entity.UpdatedAt;
+                    //issue.Url = entity.Url;
+                    //issue.State = entity.State;
+                    //issue.Comments = entity.Comments;
+
+                    var issue = AutoMapper.Mapper.Map<Issue>(entity);
 
                     results.Add(issue);
                 }
@@ -280,11 +284,11 @@ namespace AspNetDevNews.Services.AzureTableStorage
             try
             {
                 var table = GetIssuesTable();
-                var issue = new Models.Issue();
-                issue.Organization = organization;
-                issue.Repository = repository;
+                var dummy = new Models.Issue();
+                dummy.Organization = organization;
+                dummy.Repository = repository;
 
-                var partitionKey = issue.GetPartitionKey();
+                var partitionKey = dummy.GetPartitionKey();
 
                 var recentIssuesQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
                     where entry.PartitionKey == partitionKey && entry.CreatedAt > since.DateTime
@@ -296,24 +300,26 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 if (recentIssues.Any())
                 {
-                    foreach (TwittedIssueEntity product in recentIssues)
+                    foreach (TwittedIssueEntity entity in recentIssues)
                     {
-                        Console.WriteLine("Product: {0} as {1} items in stock", product.Title, product.RowKey);
-                        var issues = new Issue();
-                        issue.Body = product.Body;
-                        issue.CreatedAt = product.CreatedAt;
-                        issue.Labels = product.Labels.Split(new char[] { ';' });
-                        issue.Number = Convert.ToInt32(product.RowKey);
+                        // using automap
+                        //var issues = new Issue();
+                        //issue.Body = product.Body;
+                        //issue.CreatedAt = product.CreatedAt;
+                        //issue.Labels = product.Labels.Split(new char[] { ';' });
+                        //issue.Number = Convert.ToInt32(product.RowKey);
 
-                        var partitionFields = product.PartitionKey.Split(new char[] { '+' });
+                        //var partitionFields = product.PartitionKey.Split(new char[] { '+' });
 
-                        issue.Organization = partitionFields[0];
-                        issue.Repository = partitionFields[1];
-                        issue.Title = product.Title;
-                        issue.UpdatedAt = product.UpdatedAt;
-                        issue.Url = product.Url;
-                        issue.State = product.State;
-                        issue.Comments = product.Comments;
+                        //issue.Organization = partitionFields[0];
+                        //issue.Repository = partitionFields[1];
+                        //issue.Title = product.Title;
+                        //issue.UpdatedAt = product.UpdatedAt;
+                        //issue.Url = product.Url;
+                        //issue.State = product.State;
+                        //issue.Comments = product.Comments;
+
+                        var issue = AutoMapper.Mapper.Map<Issue>(entity);
 
                         results.Add(issue);
                     }
@@ -341,12 +347,16 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 foreach (var issue in issues)
                 {
-                    var twittedIssue = new IssueMergeEntity(issue.GetPartitionKey(), issue.GetRowKey());
-                    twittedIssue.Title = issue.Title;
-                    twittedIssue.UpdatedAt = issue.UpdatedAt;
-                    twittedIssue.State = issue.State;
-                    twittedIssue.Comments = issue.Comments;
-                    twittedIssue.ETag = "*";
+                    // using AutoMapper
+                    //var twittedIssue = new IssueMergeEntity(issue.GetPartitionKey(), issue.GetRowKey());
+                    //twittedIssue.Title = issue.Title;
+                    //twittedIssue.UpdatedAt = issue.UpdatedAt;
+                    //twittedIssue.State = issue.State;
+                    //twittedIssue.Comments = issue.Comments;
+                    //twittedIssue.ETag = "*";
+
+                    var twittedIssue = AutoMapper.Mapper.Map<IssueMergeEntity>(issue);
+
 
                     //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
                     //TableOperation insertOperation = TableOperation.Merge(twittedIssue);
@@ -383,13 +393,15 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 var alreadyStored = table.ExecuteQuery(query);
                 foreach (TwittedLinkEntity entity in alreadyStored)
                 {
-                    Console.WriteLine("Product: {0} as {1} items in stock", entity.Title, entity.RowKey);
-                    var issue = new FeedItem();
-                    issue.Id =  TableStorageUtilities.DecodeFromKey(entity.RowKey);
-                    issue.PublishDate = entity.PublishDate;
-                    issue.Summary = entity.Summary;
-                    issue.Title = entity.Title;
+                    // using autoMapper
+                    //var issue = new FeedItem();
+                    //issue.Id =  TableStorageUtilities.DecodeFromKey(entity.RowKey);
+                    //issue.PublishDate = entity.PublishDate;
+                    //issue.Summary = entity.Summary;
+                    //issue.Title = entity.Title;
+                    //issue.Feed = feed;
 
+                    var issue = AutoMapper.Mapper.Map<FeedItem>(entity);
                     results.Add(issue);
                 }
                 return results;
@@ -435,14 +447,15 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 foreach (var post in posts)
                 {
-                    var twittedIssue = new TwittedLinkEntity(
-                        TableStorageUtilities.EncodeToKey(post.Feed), 
-                        TableStorageUtilities.EncodeToKey(post.Id));
-                    twittedIssue.Title = post.Title;
-                    twittedIssue.PublishDate = post.PublishDate;
-                    twittedIssue.Summary = post.Summary;
-                    twittedIssue.StatusId = post.StatusID.ToString(); // I have to save as string because
+                    //var twittedIssue = new TwittedLinkEntity(
+                    //    TableStorageUtilities.EncodeToKey(post.Feed), 
+                    //    TableStorageUtilities.EncodeToKey(post.Id));
+                    //twittedIssue.Title = post.Title;
+                    //twittedIssue.PublishDate = post.PublishDate;
+                    //twittedIssue.Summary = post.Summary;
+                    //twittedIssue.StatusId = post.StatusID.ToString(); // I have to save as string because
 
+                    var twittedIssue = AutoMapper.Mapper.Map<TwittedLinkEntity>(post);
                     //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
                     //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
                     //await table.ExecuteAsync(insertOperation);

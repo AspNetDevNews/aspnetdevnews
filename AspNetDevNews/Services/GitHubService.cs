@@ -69,19 +69,22 @@ namespace AspNetDevNews.Services
                 var issuesToProcess = new List<Models.Issue>();
                 foreach (var issue in issues)
                 {
-                    var issueToProcess = new Models.Issue();
-                    issueToProcess.Title = issue.Title;
-                    issueToProcess.Url = issue.HtmlUrl.ToString();
-                    issueToProcess.Labels = issue.Labels.Select(lab => lab.Name).ToArray();
+                    //var issueToProcess = new Models.Issue();
+                    //issueToProcess.Title = issue.Title;
+                    //issueToProcess.Url = issue.HtmlUrl.ToString();
+                    //issueToProcess.Labels = issue.Labels.Select(lab => lab.Name).ToArray();
+                    //issueToProcess.Organization = organization;
+                    //issueToProcess.Repository = repository;
+                    //issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
+                    //issueToProcess.Number = issue.Number;
+                    //issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
+                    //issueToProcess.Body = issue.Body;
+                    //issueToProcess.State = issue.State == 0 ? "Open" : "Closed";
+                    //issueToProcess.Comments = issue.Comments;
+
+                    var issueToProcess = AutoMapper.Mapper.Map<Models.Issue>(issue);
                     issueToProcess.Organization = organization;
                     issueToProcess.Repository = repository;
-                    issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
-                    issueToProcess.Number = issue.Number;
-                    issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
-                    issueToProcess.Body = issue.Body;
-                    issueToProcess.State = issue.State == 0 ? "Open" : "Closed";
-                    issueToProcess.Comments = issue.Comments;
-
 
                     issuesToProcess.Add(issueToProcess);
                 }

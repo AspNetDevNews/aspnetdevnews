@@ -1,4 +1,6 @@
-﻿using AspNetDevNews.Services;
+﻿using AspNetDevNews.Helpers;
+using AspNetDevNews.Models;
+using AspNetDevNews.Services;
 using AspNetDevNews.Services.AzureTableStorage;
 using AspNetDevNews.Services.Feeds;
 using System;
@@ -7,16 +9,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-// TODO: updated the UpdatedAt field at every update
-//       store the number of comments
-
 namespace AspNetDevNews
 {
     class Program
     {
         static void Main(string[] args)
         {
-           
+            //Test().Wait();
+
             Work().Wait();
         }
 
@@ -29,7 +29,33 @@ namespace AspNetDevNews
             //await gitHubService.GetRecentMerges("aspnet", "Docs", "aspnet:master");
         }
 
+        public static async Task Test()
+        {
+            AutoMapperHelper.InitMappings();
+
+            var test = new TwittedIssue();
+            test.Body = "corpo";
+            test.Comments = 1;
+            test.CreatedAt = DateTime.Now;
+            test.Labels = new string[] { "test1", "test2" };
+            test.Number = 101;
+            test.Organization = "org";
+            test.Repository = "repo";
+            test.State = "open";
+            test.StatusID = 1212;
+            test.Title = "titolo";
+            test.UpdatedAt = DateTime.Now.AddHours(1);
+            test.Url = "http://localhost";
+
+            var lista = new List<TwittedIssue>();
+            lista.Add(test);
+            var stg = new AzureTableStorageService();
+            stg.Store(lista);
+        }
+
         public static async Task Work() {
+
+            AutoMapperHelper.InitMappings();
             var ghService = new IssueReceiveService();
 
             DateTime dtInizio = DateTime.Now;
@@ -38,18 +64,18 @@ namespace AspNetDevNews
             int updated = 0;
             int postedLink = 0;
 
-            // web posts processing
-            foreach (var feed in ghService.Feeds) { 
-                // get recent posts
-                var links = await ghService.RecentPosts(feed);
-                // check for posts already in archive and remove from the list
-                links = await ghService.RemoveExisting(links);
-                // publish the new links
-                var twittedPosts = await ghService.PublishNewPosts(links);
-                // store in the storage the data about the new issues
-                await ghService.StorePublishedPosts(twittedPosts);
-                postedLink += twittedPosts.Count;
-            }
+            //// web posts processing
+            //foreach (var feed in ghService.Feeds) { 
+            //    // get recent posts
+            //    var links = await ghService.RecentPosts(feed);
+            //    // check for posts already in archive and remove from the list
+            //    links = await ghService.RemoveExisting(links);
+            //    // publish the new links
+            //    var twittedPosts = await ghService.PublishNewPosts(links);
+            //    // store in the storage the data about the new issues
+            //    await ghService.StorePublishedPosts(twittedPosts);
+            //    postedLink += twittedPosts.Count;
+            //}
 
             // github repositories processing
             foreach (var organization in ghService.Organizations) {
