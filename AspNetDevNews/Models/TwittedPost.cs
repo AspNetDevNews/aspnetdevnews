@@ -4,13 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AspNetDevNews.Services.Feeds
+namespace AspNetDevNews.Models
 {
-    public class FeedItem
+    public class TwittedPost
     {
         public string Id { get; set; }
         public DateTime PublishDate { get; set; }
         public string Title { get; set; }
         public string Summary { get; set; }
+
+        public ulong StatusID { get; set; }
+        public string Feed { get; set; }
     }
 }

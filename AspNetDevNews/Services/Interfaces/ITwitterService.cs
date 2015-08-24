@@ -10,5 +10,6 @@ namespace AspNetDevNews.Services.Interfaces
     public interface ITwitterService
     {
         Task<IList<TwittedIssue>> SendIssues(IList<Models.Issue> issues);
+        Task<IList<TwittedPost>> SendPosts(IList<Models.FeedItem> links);
     }
 }

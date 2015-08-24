@@ -145,10 +145,13 @@
   <ItemGroup>
     <Compile Include="Helpers\DateTimeHelper.cs" />
     <Compile Include="Helpers\RestHelper.cs" />
+    <Compile Include="Models\TwittedPost.cs" />
+    <Compile Include="Services\AzureTableStorage\TableStorageUtilities.cs" />
     <Compile Include="Models\Issue.cs" />
     <Compile Include="Models\TwittedIssue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\Interfaces\IFeedReaderService.cs" />
     <Compile Include="Services\AzureTableStorage\IssueMergeEntity.cs" />
     <Compile Include="Services\AzureTableStorage\AzureTableStorageService.cs" />
     <Compile Include="Services\AzureTableStorage\ExceptionEntity.cs" />
@@ -156,7 +159,7 @@
     <Compile Include="Services\AzureTableStorage\TwittedIssueEntity.cs" />
     <Compile Include="Services\AzureTableStorage\TwittedLinkEntity.cs" />
     <Compile Include="Services\DDbStorageService.cs" />
-    <Compile Include="Services\Feeds\FeedItem.cs" />
+    <Compile Include="Models\FeedItem.cs" />
     <Compile Include="Services\Feeds\FeedReaderService.cs" />
     <Compile Include="Services\ReadOnlyTwitterService.cs" />
     <Compile Include="Services\GitHubService.cs" />

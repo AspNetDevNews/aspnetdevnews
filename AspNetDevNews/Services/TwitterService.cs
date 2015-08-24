@@ -74,5 +74,47 @@ namespace AspNetDevNews.Services
                 return twittedIssues;
             }
         }
+
+        public async Task<IList<TwittedPost>> SendPosts( IList<FeedItem> links) {
+            var authorizer = new SingleUserAuthorizer
+            {
+                CredentialStore = new SingleUserInMemoryCredentialStore
+                {
+                    ConsumerKey = this.Settings.TwitterConsumerKey,
+                    ConsumerSecret = this.Settings.TwitterConsumerSecret,
+                    AccessToken = this.Settings.TwitterAccessToken,
+                    AccessTokenSecret = this.Settings.TwitterAccessTokenSecret
+                }
+            };
+            using (var twitterCtx = new TwitterContext(authorizer))
+            {
+                List<TwittedPost> twittedIssues = new List<TwittedPost>();
+
+                foreach (var post in links)
+                {
+                    try
+                    {
+                        var tweet = await twitterCtx.TweetAsync(post.GetTwitterText());
+
+                        var twittedIssue = new TwittedPost();
+
+                        twittedIssue.Title = post.Title;
+                        twittedIssue.Id = post.Id;
+                        twittedIssue.PublishDate = post.PublishDate;
+                        twittedIssue.Summary = post.Summary;
+                        twittedIssue.Title = post.Title;
+                        twittedIssue.StatusID = tweet.StatusID;
+                        twittedIssue.Feed = post.Feed;
+
+                        twittedIssues.Add(twittedIssue);
+                    }
+                    catch (Exception exc)
+                    {
+                        await Storage.Store(exc, post.Feed, post, "SendPosts");
+                    }
+                }
+                return twittedIssues;
+            }
+        }
     }
 }

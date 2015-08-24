@@ -17,14 +17,13 @@ namespace AspNetDevNews
         static void Main(string[] args)
         {
            
-//            Merges().Wait();
             Work().Wait();
         }
 
         public static async Task Merges()
         {
             var feedService = new FeedReaderService();
-            await feedService.ReadFeeds();
+            //await feedService.ReadFeeds();
 
             //var gitHubService = new GitHubService();
             //await gitHubService.GetRecentMerges("aspnet", "Docs", "aspnet:master");
@@ -37,7 +36,22 @@ namespace AspNetDevNews
             int twitted = 0;
             int checkedRepositories = 0;
             int updated = 0;
+            int postedLink = 0;
 
+            // web posts processing
+            foreach (var feed in ghService.Feeds) { 
+                // get recent posts
+                var links = await ghService.RecentPosts(feed);
+                // check for posts already in archive and remove from the list
+                links = await ghService.RemoveExisting(links);
+                // publish the new links
+                var twittedPosts = await ghService.PublishNewPosts(links);
+                // store in the storage the data about the new issues
+                await ghService.StorePublishedPosts(twittedPosts);
+                postedLink += twittedPosts.Count;
+            }
+
+            // github repositories processing
             foreach (var organization in ghService.Organizations) {
                 var repositories = await ghService.Repositories(organization);
                 checkedRepositories += repositories.Count();
@@ -67,7 +81,7 @@ namespace AspNetDevNews
 
             DateTime dtFine = DateTime.Now;
             var stgService = new AzureTableStorageService();
-            await stgService.ReportExecution(dtInizio, dtFine, twitted, checkedRepositories, updated);
+            await stgService.ReportExecution(dtInizio, dtFine, twitted, checkedRepositories, updated, postedLink);
         }
 
     }

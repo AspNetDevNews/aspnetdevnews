@@ -1,4 +1,5 @@
 ﻿using AspNetDevNews.Services.Interfaces;
+using AspNetDevNews.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,7 +12,7 @@ using System.Xml;
 
 namespace AspNetDevNews.Services.Feeds
 {
-    public class FeedReaderService
+    public class FeedReaderService: IFeedReaderService
     {
         private ISettingsService Settings { get; set; }
 
@@ -23,22 +24,26 @@ namespace AspNetDevNews.Services.Feeds
             Settings = settings;
         }
 
-        public async Task<List<FeedItem>> ReadFeeds() {
-            var myFeed = "http://webdevblogs.azurewebsites.net/master.xml";
-            SyndicationFeed feed = await DownloadFeed(myFeed);
+        public async Task<IList<FeedItem>> ReadFeed(string feedUrl)
+        {
+            SyndicationFeed feed = await DownloadFeed(feedUrl);
 
             List<FeedItem> result = new List<FeedItem>();
             foreach (var item in feed.Items) {
                 try
                 {
                     var mioItem = new FeedItem();
-                    mioItem.Id = item.Id;
+                    if (item.Id.ToLower().StartsWith("http"))
+                        mioItem.Id = item.Id;
+                    else if (item.Links.Count > 0)
+                        mioItem.Id = item.Links[0].Uri.ToString();
                     if (item.PublishDate.Year != 1)
                         mioItem.PublishDate = item.PublishDate.DateTime;
                     else
                         mioItem.PublishDate = item.LastUpdatedTime.DateTime;
                     mioItem.Summary = item.Summary?.Text;
                     mioItem.Title = item.Title.Text;
+                    mioItem.Feed = feedUrl;
 
                     if (mioItem.PublishDate > this.Settings.Since)
                         result.Add(mioItem);

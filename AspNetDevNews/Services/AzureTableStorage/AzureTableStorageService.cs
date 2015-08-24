@@ -1,4 +1,4 @@
-﻿using AspNetDevNews.Services.AzureTableStorage;
+﻿using AspNetDevNews.Models;
 using AspNetDevNews.Services.Interfaces;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
@@ -6,12 +6,8 @@ using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using AspNetDevNews.Models;
-using LinqToTwitter;
 
 namespace AspNetDevNews.Services.AzureTableStorage
 {
@@ -77,8 +73,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
             return table;
         }
 
-        public async Task Store(IList<Models.TwittedIssue> issues) {
-            if (issues == null)
+        public async Task Store(IList<TwittedIssue> issues) {
+            if (issues == null || issues.Count == 0)
                 return;
 
             try
@@ -99,16 +95,16 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     twittedIssue.State = issue.State;
                     twittedIssue.Comments = issue.Comments;
 
-                    TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
                     //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
                     //await table.ExecuteAsync(insertOperation);
-                    table.Execute(insertOperation);
-                    //batchOperation.Insert(twittedIssue);
+                    //table.Execute(insertOperation);
+                    batchOperation.Insert(twittedIssue);
 
                 }
-                //if (batchOperation.Count() > 0) { 
-                //    var result = await table.ExecuteBatchAsync(batchOperation);
-                //}
+                if (batchOperation.Count() > 0) { 
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
             }
             catch (Exception ex)
             {
@@ -116,8 +112,12 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
-        public async Task Store(Exception exception, Models.Issue issue, string operation)
+        public async Task Store(Exception exception, Issue issue, string operation)
         {
+            if (exception == null )
+                return;
+            if (string.IsNullOrWhiteSpace(operation))
+                return;
 
             try
             {
@@ -139,7 +139,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
-        public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues)
+        public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues, int postedLinks)
         {
 
             try
@@ -152,6 +152,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 Report.TwittedIsseues = TwittedIssues;
                 Report.CheckedRepositories = CheckedRepositories;
                 Report.UpdatedIssues = updatedIssues;
+                Report.TwittedPosts = postedLinks;
 
                 TableOperation insertOperation = TableOperation.Insert(Report);
                 var result = await table.ExecuteAsync(insertOperation);
@@ -162,7 +163,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
-        public async Task<bool> Exists(Models.TwittedIssue issue) {
+        public async Task<bool> Exists(TwittedIssue issue) {
             try
             {
                 var table = GetIssuesTable();
@@ -221,8 +222,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         }
 
-
-        public async Task<IList<Issue>> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
+        public IList<Issue> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
         {
             try
             {
@@ -274,7 +274,6 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 return new List<Models.Issue>();
             }
         }
-
 
         public async Task<IList<Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
         {
@@ -357,6 +356,101 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 }
                 if (batchOperation.Count() > 0)
                 {
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        public IList<FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys)
+        {
+            try
+            {
+                var table = GetLinksTable();
+
+                List<string> realKeys = new List<string>();
+                for (int i = 0; i < rowKeys.Count; i++)
+                    realKeys.Add(TableStorageUtilities.EncodeToKey(rowKeys[i]));
+                feed = TableStorageUtilities.EncodeToKey(feed);
+
+                TableQuery <TwittedLinkEntity> query = new TableQuery<TwittedLinkEntity>().Where(
+                    TableStorageUtilities.GetTableQuerySetString(feed, realKeys));
+                var results = new List<FeedItem>();
+
+                var alreadyStored = table.ExecuteQuery(query);
+                foreach (TwittedLinkEntity entity in alreadyStored)
+                {
+                    Console.WriteLine("Product: {0} as {1} items in stock", entity.Title, entity.RowKey);
+                    var issue = new FeedItem();
+                    issue.Id =  TableStorageUtilities.DecodeFromKey(entity.RowKey);
+                    issue.PublishDate = entity.PublishDate;
+                    issue.Summary = entity.Summary;
+                    issue.Title = entity.Title;
+
+                    results.Add(issue);
+                }
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return new List<Models.FeedItem>();
+            }
+        }
+
+        public async Task Store(Exception exception, string feedItem, FeedItem post, string operation)
+        {
+            try
+            {
+                var table = GetExceptionsTable();
+
+                var storeException = new ExceptionEntity(operation, DateTime.Now.GetRowKey());
+                storeException.TwitRowKey = TableStorageUtilities.EncodeToKey(post.Id);
+                storeException.TwitPartitionKey = TableStorageUtilities.EncodeToKey(feedItem);
+                storeException.CreatedAt = DateTime.Now;
+                storeException.Exception = JsonConvert.SerializeObject(exception);
+                storeException.Operation = operation;
+
+                TableOperation insertOperation = TableOperation.Insert(storeException);
+                var result = await table.ExecuteAsync(insertOperation);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        public async Task Store(IList<TwittedPost> posts)
+        {
+            if (posts == null)
+                return;
+
+            try
+            {
+                var table = GetLinksTable();
+                TableBatchOperation batchOperation = new TableBatchOperation();
+
+                foreach (var post in posts)
+                {
+                    var twittedIssue = new TwittedLinkEntity(
+                        TableStorageUtilities.EncodeToKey(post.Feed), 
+                        TableStorageUtilities.EncodeToKey(post.Id));
+                    twittedIssue.Title = post.Title;
+                    twittedIssue.PublishDate = post.PublishDate;
+                    twittedIssue.Summary = post.Summary;
+                    twittedIssue.StatusId = post.StatusID.ToString(); // I have to save as string because
+
+                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                    //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
+                    //await table.ExecuteAsync(insertOperation);
+                    //table.Execute(insertOperation);
+                    batchOperation.Insert(twittedIssue);
+
+                }
+                if (batchOperation.Count() > 0) { 
                     var result = await table.ExecuteBatchAsync(batchOperation);
                 }
             }

@@ -31,13 +31,13 @@ namespace AspNetDevNews.Services.AzureTableStorage
         {
             return await AzureStorage.GetRecentIssues(organization, repository, since );
         }
-        public async Task<IList<Issue>> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
+        public IList<Issue> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
         {
-            return await AzureStorage.GetBatchIssues(organization, repository, rowKeys);
+            return AzureStorage.GetBatchIssues(organization, repository, rowKeys);
         }
 
         #region Store methods do nothing
-        public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues)
+        public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues, int postedLinks)
         {
             return;
         }
@@ -55,6 +55,21 @@ namespace AspNetDevNews.Services.AzureTableStorage
         public async Task Store(Exception exception, Issue issue, string operation)
         {
             return;
+        }
+
+        public IList<FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task Store(Exception exception, string feed, FeedItem post, string operation)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task Store(IList<TwittedPost> posts)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

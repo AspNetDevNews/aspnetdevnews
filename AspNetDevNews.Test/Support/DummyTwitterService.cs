@@ -16,6 +16,16 @@ namespace AspNetDevNews.Test.Support
            return Sent;
         }
 
+        public Task<IList<FeedItem>> SendPosts(IList<FeedItem> links)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<IList<TwittedPost>> ITwitterService.SendPosts(IList<FeedItem> links)
+        {
+            throw new NotImplementedException();
+        }
+
         public DummyTwitterService() {
             Sent = new List<TwittedIssue>();
         }

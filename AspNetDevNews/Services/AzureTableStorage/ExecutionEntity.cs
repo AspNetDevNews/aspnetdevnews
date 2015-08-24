@@ -20,5 +20,6 @@ namespace AspNetDevNews.Services.AzureTableStorage
         public int TwittedIsseues { get; set; }
         public int CheckedRepositories { get; set; }
         public int UpdatedIssues { get; set; }
+        public int TwittedPosts { get; set; }
     }
 }
