@@ -43,7 +43,8 @@ namespace AspNetDevNews.Test
             issues.Add(new FeedItem { Id = "http://localhost", Feed = "Http:/127.0.0.1", Title = "prova"});
 
             var gitMock = new Mock<IStorageService>();
-            gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).Throws(new ApplicationException());
+//            gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).Throws(new ApplicationException());
+            gitMock.Setup(mock => mock.GetBatchWebLinks(It.IsAny<string>(), It.IsAny<IList<string>>())).Throws(new ApplicationException());
             var ghService = this.GetService(gitMock.Object);
 
             var cleanedIssues = await ghService.RemoveExisting(issues);

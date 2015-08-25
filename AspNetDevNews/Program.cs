@@ -9,48 +9,47 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Add AutoFac
+// use autofac to resolve TwitterContext, to make sendIssues routine testable, get tables in azure storage to make store testable
+// add logger as instance and store everything in a blob
+
+// azuretablestorage: store methods, checks that ExecuteBatchAsync isn't called  if list is empty
+// more parameters validation in azurestorageservice
+
 namespace AspNetDevNews
 {
     class Program
     {
         static void Main(string[] args)
         {
-            //Test().Wait();
+//            Merges().Wait();
 
             Work().Wait();
         }
 
         public static async Task Merges()
         {
+            AutoMapperHelper.InitMappings();
+
+            var lista = new List<Models.TwittedPost>();
+            var issue = new Models.TwittedPost();
+            issue.Feed = "mio Feed";
+            issue.Id = "http://loclahost";
+            issue.PublishDate = DateTime.Now;
+            issue.StatusID = 12;
+            issue.Summary = "sommario";
+            issue.Title = "titolo";
+
+            lista.Add(issue);
+            var twService = new AzureTableStorageService();
+            await twService.Store(lista);
+
+            return;
             var feedService = new FeedReaderService();
             //await feedService.ReadFeeds();
 
-            //var gitHubService = new GitHubService();
-            //await gitHubService.GetRecentMerges("aspnet", "Docs", "aspnet:master");
-        }
-
-        public static async Task Test()
-        {
-            AutoMapperHelper.InitMappings();
-
-            var test = new TwittedIssue();
-            test.Body = "corpo";
-            test.Comments = 1;
-            test.CreatedAt = DateTime.Now;
-            test.Labels = new string[] { "test1", "test2" };
-            test.Number = 101;
-            test.Organization = "org";
-            test.Repository = "repo";
-            test.State = "open";
-            test.StatusID = 1212;
-            test.Title = "titolo";
-            test.UpdatedAt = DateTime.Now.AddHours(1);
-            test.Url = "http://localhost";
-
-            var lista = new List<TwittedIssue>();
-            lista.Add(test);
-            var stg = new AzureTableStorageService();
-            stg.Store(lista);
+            var gitHubService = new GitHubService();
+            await gitHubService.ExtractCommitDocuments("aspnet", "Docs", "cb5fc228c857cfabbc128385a628b95f89232469");
         }
 
         public static async Task Work() {
@@ -65,17 +64,18 @@ namespace AspNetDevNews
             int postedLink = 0;
 
             //// web posts processing
-            //foreach (var feed in ghService.Feeds) { 
-            //    // get recent posts
-            //    var links = await ghService.RecentPosts(feed);
-            //    // check for posts already in archive and remove from the list
-            //    links = await ghService.RemoveExisting(links);
-            //    // publish the new links
-            //    var twittedPosts = await ghService.PublishNewPosts(links);
-            //    // store in the storage the data about the new issues
-            //    await ghService.StorePublishedPosts(twittedPosts);
-            //    postedLink += twittedPosts.Count;
-            //}
+            foreach (var feed in ghService.Feeds)
+            {
+                // get recent posts
+                var links = await ghService.RecentPosts(feed);
+                // check for posts already in archive and remove from the list
+                links = await ghService.RemoveExisting(links);
+                // publish the new links
+                var twittedPosts = await ghService.PublishNewPosts(links);
+                // store in the storage the data about the new issues
+                await ghService.StorePublishedPosts(twittedPosts);
+                postedLink += twittedPosts.Count;
+            }
 
             // github repositories processing
             foreach (var organization in ghService.Organizations) {

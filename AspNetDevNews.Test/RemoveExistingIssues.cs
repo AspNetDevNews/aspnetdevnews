@@ -46,7 +46,9 @@ namespace AspNetDevNews.Test
             issues.Add(new Issue { Organization = "org", Repository = "repo", Number = 1});
 
             var gitMock = new Mock<IStorageService>();
-            gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>())).Throws(new ApplicationException());
+            gitMock.Setup(mock => mock.GetBatchIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IList<string>>()))
+                //            gitMock.Setup(mock => mock.GetRecentIssues(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
+                .Throws(new ApplicationException());
             var ghService = this.GetService(gitMock.Object);
 
             var cleanedIssues = await ghService.RemoveExisting(issues);

@@ -74,7 +74,10 @@ namespace AspNetDevNews.Services.AzureTableStorage
         }
 
         #endregion
-        public async Task Store(IList<TwittedIssue> issues) {
+
+        #region insert and update entities
+        public async Task Store(IList<TwittedIssue> issues)
+        {
             if (issues == null || issues.Count == 0)
                 return;
 
@@ -83,8 +86,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 var table = GetIssuesTable();
                 TableBatchOperation batchOperation = new TableBatchOperation();
 
-                foreach (var issue in issues) {
-                    // using automap
+                foreach (var issue in issues)
+                {
+                    // OK
                     //var twittedIssue = new TwittedIssueEntity(issue.GetPartitionKey(), issue.GetRowKey());
                     //twittedIssue.Title = issue.Title;
                     //twittedIssue.Url = issue.Url;
@@ -105,7 +109,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     batchOperation.Insert(twittedIssue);
 
                 }
-                if (batchOperation.Count() > 0)  
+                if (batchOperation.Count() > 0)
                     await table.ExecuteBatchAsync(batchOperation);
             }
             catch (Exception ex)
@@ -114,6 +118,86 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
+        public async Task Store(IList<TwittedPost> posts)
+        {
+            if (posts == null || posts.Count == 0)
+                return;
+
+            try
+            {
+                var table = GetLinksTable();
+                TableBatchOperation batchOperation = new TableBatchOperation();
+
+                foreach (var post in posts)
+                {
+                    //var twittedIssue = new TwittedLinkEntity(
+                    //    TableStorageUtilities.EncodeToKey(post.Feed), 
+                    //    TableStorageUtilities.EncodeToKey(post.Id));
+                    //twittedIssue.Title = post.Title;
+                    //twittedIssue.PublishDate = post.PublishDate;
+                    //twittedIssue.Summary = post.Summary;
+                    //twittedIssue.StatusId = post.StatusID.ToString(); // I have to save as string because
+
+                    var twittedIssue = AutoMapper.Mapper.Map<TwittedLinkEntity>(post);
+                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                    //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
+                    //await table.ExecuteAsync(insertOperation);
+                    //table.Execute(insertOperation);
+                    batchOperation.Insert(twittedIssue);
+
+                }
+                if (batchOperation.Count() > 0)
+                {
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        public async Task Merge(IList<Issue> issues)
+        {
+            if (issues == null || issues.Count == 0)
+                return;
+
+            try
+            {
+                var table = GetIssuesTable();
+                TableBatchOperation batchOperation = new TableBatchOperation();
+
+                foreach (var issue in issues)
+                {
+                    // OK
+                    //var twittedIssue = new IssueMergeEntity(issue.GetPartitionKey(), issue.GetRowKey());
+                    //twittedIssue.Title = issue.Title;
+                    //twittedIssue.UpdatedAt = issue.UpdatedAt;
+                    //twittedIssue.State = issue.State;
+                    //twittedIssue.Comments = issue.Comments;
+                    //twittedIssue.ETag = "*";
+
+                    var twittedIssue = AutoMapper.Mapper.Map<IssueMergeEntity>(issue);
+
+
+                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                    //TableOperation insertOperation = TableOperation.Merge(twittedIssue);
+                    //var result = await table.ExecuteAsync(insertOperation);
+                    batchOperation.Merge(twittedIssue);
+
+                }
+                if (batchOperation.Count() > 0)
+                {
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
+        #endregion
         public async Task Store(Exception exception, Issue issue, string operation)
         {
             if (exception == null )
@@ -249,7 +333,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 var alreadyStored = table.ExecuteQuery(query);
                 foreach (TwittedIssueEntity entity in alreadyStored)
                 {
-                    // using AutoMapper
+                    // OK
                     //var issue = new Issue();
                     //issue.Body = entity.Body;
                     //issue.CreatedAt = entity.CreatedAt;
@@ -302,7 +386,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 {
                     foreach (TwittedIssueEntity entity in recentIssues)
                     {
-                        // using automap
+                        // OK
                         //var issues = new Issue();
                         //issue.Body = product.Body;
                         //issue.CreatedAt = product.CreatedAt;
@@ -338,43 +422,6 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
-        public async Task Merge(IList<Issue> issues)
-        {
-            try
-            {
-                var table = GetIssuesTable();
-                TableBatchOperation batchOperation = new TableBatchOperation();
-
-                foreach (var issue in issues)
-                {
-                    // using AutoMapper
-                    //var twittedIssue = new IssueMergeEntity(issue.GetPartitionKey(), issue.GetRowKey());
-                    //twittedIssue.Title = issue.Title;
-                    //twittedIssue.UpdatedAt = issue.UpdatedAt;
-                    //twittedIssue.State = issue.State;
-                    //twittedIssue.Comments = issue.Comments;
-                    //twittedIssue.ETag = "*";
-
-                    var twittedIssue = AutoMapper.Mapper.Map<IssueMergeEntity>(issue);
-
-
-                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
-                    //TableOperation insertOperation = TableOperation.Merge(twittedIssue);
-                    //var result = await table.ExecuteAsync(insertOperation);
-                    batchOperation.Merge(twittedIssue);
-
-                }
-                if (batchOperation.Count() > 0)
-                {
-                    var result = await table.ExecuteBatchAsync(batchOperation);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-        }
-
         public IList<FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys)
         {
             try
@@ -393,7 +440,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 var alreadyStored = table.ExecuteQuery(query);
                 foreach (TwittedLinkEntity entity in alreadyStored)
                 {
-                    // using autoMapper
+                    // OK
                     //var issue = new FeedItem();
                     //issue.Id =  TableStorageUtilities.DecodeFromKey(entity.RowKey);
                     //issue.PublishDate = entity.PublishDate;
@@ -428,44 +475,6 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 TableOperation insertOperation = TableOperation.Insert(storeException);
                 var result = await table.ExecuteAsync(insertOperation);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-        }
-
-        public async Task Store(IList<TwittedPost> posts)
-        {
-            if (posts == null)
-                return;
-
-            try
-            {
-                var table = GetLinksTable();
-                TableBatchOperation batchOperation = new TableBatchOperation();
-
-                foreach (var post in posts)
-                {
-                    //var twittedIssue = new TwittedLinkEntity(
-                    //    TableStorageUtilities.EncodeToKey(post.Feed), 
-                    //    TableStorageUtilities.EncodeToKey(post.Id));
-                    //twittedIssue.Title = post.Title;
-                    //twittedIssue.PublishDate = post.PublishDate;
-                    //twittedIssue.Summary = post.Summary;
-                    //twittedIssue.StatusId = post.StatusID.ToString(); // I have to save as string because
-
-                    var twittedIssue = AutoMapper.Mapper.Map<TwittedLinkEntity>(post);
-                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
-                    //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
-                    //await table.ExecuteAsync(insertOperation);
-                    //table.Execute(insertOperation);
-                    batchOperation.Insert(twittedIssue);
-
-                }
-                if (batchOperation.Count() > 0) { 
-                    var result = await table.ExecuteBatchAsync(batchOperation);
-                }
             }
             catch (Exception ex)
             {

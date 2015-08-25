@@ -50,8 +50,7 @@ namespace AspNetDevNews.Services
                     {
                         var tweet = await twitterCtx.TweetAsync(issue.GetTwitterText());
 
-                        //var twittedIssue = new TwittedIssue();
-
+                        // OK
                         //twittedIssue.Title = issue.Title;
                         //twittedIssue.Url = issue.Url;
                         //twittedIssue.Labels = issue.Labels;
@@ -60,10 +59,10 @@ namespace AspNetDevNews.Services
                         //twittedIssue.CreatedAt = issue.CreatedAt;
                         //twittedIssue.Number = issue.Number;
                         //twittedIssue.UpdatedAt = issue.UpdatedAt;
-
                         //twittedIssue.StatusID = tweet.StatusID;
                         //twittedIssue.Body = issue.Body;
                         //twittedIssue.Comments = issue.Comments;
+
                         var twittedIssue = AutoMapper.Mapper.Map<TwittedIssue>(issue);
                         twittedIssue.StatusID = tweet.StatusID;
 
@@ -97,9 +96,8 @@ namespace AspNetDevNews.Services
                     try
                     {
                         var tweet = await twitterCtx.TweetAsync(post.GetTwitterText());
-
+                        // OK
                         //var twittedIssue = new TwittedPost();
-
                         //twittedIssue.Title = post.Title;
                         //twittedIssue.Id = post.Id;
                         //twittedIssue.PublishDate = post.PublishDate;

@@ -31,7 +31,8 @@ namespace AspNetDevNews.Models
             string title = this.Title.Trim();
             if (!title.EndsWith("."))
                 title += ".";
-            return "[" + this.Repository + "]: " + title + " " + this.Url;
+//            return "[" + this.Repository + "]: " + title + " " + this.Url;
+            return "[" + this.Labels + "]: " + title + " " + this.Url;
         }
 
     }

@@ -94,9 +94,6 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IssuesWithNoLabelAreKo()
         {
-            //var dummyGutHubService = new DummyGitHubService();
-            //var ghService = GetService(dummyGutHubService);
-
             var recentIssues = new List<Issue>();
             recentIssues.Add(new Issue { Labels = new string[] { } });
 
@@ -112,9 +109,6 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IfFailingInGetIssuesReturnsEmptyList()
         {
-            //var dummyGutHubService = new DummyGitHubService();
-            //var ghService = GetService(dummyGutHubService);
-
             var recentIssues = new List<Issue>();
             recentIssues.Add(new Issue { Labels = new string[] { } });
 
@@ -130,8 +124,6 @@ namespace AspNetDevNews.Test
         [TestMethod, TestCategory("RecentGitHubIssues")]
         public async Task IfOneOkAndOneKoJustOneIsReturned()
         {
-            //var dummyGutHubService = new DummyGitHubService();
-            //var ghService = GetService(dummyGutHubService);
             var serviceForLabels = new IssueReceiveService();
 
             foreach (var label in serviceForLabels.Labels)

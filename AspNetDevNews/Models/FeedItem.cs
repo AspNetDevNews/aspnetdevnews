@@ -19,7 +19,7 @@ namespace AspNetDevNews.Models
             string title = this.Title.Trim();
             if (!title.EndsWith("."))
                 title += ".";
-            return title + " " + this.Id;
+            return "[Blog]: " + title + " " + this.Id;
         }
 
     }

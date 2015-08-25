@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AspNetDevNews.Models;
+using AspNetDevNews.Helpers;
+using System.Reflection;
 
 namespace AspNetDevNews.Services
 {
@@ -69,6 +71,7 @@ namespace AspNetDevNews.Services
                 var issuesToProcess = new List<Models.Issue>();
                 foreach (var issue in issues)
                 {
+                    // OK
                     //var issueToProcess = new Models.Issue();
                     //issueToProcess.Title = issue.Title;
                     //issueToProcess.Url = issue.HtmlUrl.ToString();
@@ -108,5 +111,65 @@ namespace AspNetDevNews.Services
             foreach (var merge in merged) {
             }
         }
+
+        private static bool SetAllowUnsafeHeaderParsing(bool value)
+        {
+            //Get the assembly that contains the internal class  
+            Assembly aNetAssembly = Assembly.GetAssembly(typeof(System.Net.Configuration.SettingsSection));
+            if (aNetAssembly != null)
+            {
+                //Use the assembly in order to get the internal type for the internal class  
+                Type aSettingsType = aNetAssembly.GetType("System.Net.Configuration.SettingsSectionInternal");
+                if (aSettingsType != null)
+                {
+                    //Use the internal static property to get an instance of the internal settings class.  
+                    //If the static instance isn't created allready the property will create it for us.  
+                    object anInstance = aSettingsType.InvokeMember("Section",
+                      BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
+
+                    if (anInstance != null)
+                    {
+                        //Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not  
+                        FieldInfo aUseUnsafeHeaderParsing = aSettingsType.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
+                        if (aUseUnsafeHeaderParsing != null)
+                        {
+                            aUseUnsafeHeaderParsing.SetValue(anInstance, value);
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+        // http://dejanstojanovic.net/aspnet/2014/october/the-server-committed-a-protocol-violation-section-responsestatusline/
+        public async Task<IList<string>> ExtractCommitDocuments(string organization, string repository, string commit) {
+            var client = GetClient();
+            var documents = new List<string>();
+
+            SetAllowUnsafeHeaderParsing(true);
+
+            var commitData = await client.GitDatabase.Commit.Get(organization, repository, commit);
+
+            var repo = await client.Repository.GetBranch(organization, repository, "master");
+            repo.Commit.Url.ToString();
+
+            var myCommit = RestHelper.Get<string>("https://api.github.com/repos/aspnet/Docs/commits/", "cb5fc228c857cfabbc128385a628b95f89232469");
+
+            ////commitData.Tree
+            //var tree = await client.GitDatabase.Tree.Get(organization, repository, commitData.Tree.Sha);
+            //foreach (var elemento in tree.Tree) {
+            //    if (elemento.Type == TreeType.Blob && elemento.Path.ToLower().EndsWith(".rst"))
+            //        documents.Add(elemento.Path);
+            //    if (elemento.Type == TreeType.Tree) {
+            //        var test = await client.GitDatabase.Tree.Get(organization, repository, elemento.Sha);
+            //    }
+            //}
+
+            //var blob = await client.GitDatabase.Blob.Get(organization, repository, commitData.Tree.Sha);
+            var deploy = await client.Deployment.GetAll(organization, repository);
+
+            return null;
+        }
+
     }
 }
