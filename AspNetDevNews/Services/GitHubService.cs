@@ -15,11 +15,13 @@ namespace AspNetDevNews.Services
     {
         private ISettingsService Settings { get; set; }
 
-        public GitHubService()
-        {
-            this.Settings = new SettingsService();
-        }
+        // Devo togliere le referenze, poi lo posso cancellare
+        //public GitHubService()
+        //{
+        //    this.Settings = new SettingsService();
+        //}
 
+        // Used by AutoFac
         public GitHubService(ISettingsService settings)
         {
             if (settings == null)

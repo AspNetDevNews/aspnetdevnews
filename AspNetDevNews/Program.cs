@@ -3,6 +3,8 @@ using AspNetDevNews.Models;
 using AspNetDevNews.Services;
 using AspNetDevNews.Services.AzureTableStorage;
 using AspNetDevNews.Services.Feeds;
+using AspNetDevNews.Services.Interfaces;
+using Autofac;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +22,8 @@ namespace AspNetDevNews
 {
     class Program
     {
+        private static IContainer Container { get; set; }
+
         static void Main(string[] args)
         {
 //            Merges().Wait();
@@ -30,32 +34,21 @@ namespace AspNetDevNews
         public static async Task Merges()
         {
             AutoMapperHelper.InitMappings();
+            Container = AutoFacHelper.InitAutoFac();
 
-            var lista = new List<Models.TwittedPost>();
-            var issue = new Models.TwittedPost();
-            issue.Feed = "mio Feed";
-            issue.Id = "http://loclahost";
-            issue.PublishDate = DateTime.Now;
-            issue.StatusID = 12;
-            issue.Summary = "sommario";
-            issue.Title = "titolo";
+            var ghService = Container.Resolve<IGitHubService>();
+            var azService = Container.Resolve<IStorageService>();
 
-            lista.Add(issue);
-            var twService = new AzureTableStorageService();
-            await twService.Store(lista);
-
-            return;
-            var feedService = new FeedReaderService();
-            //await feedService.ReadFeeds();
-
-            var gitHubService = new GitHubService();
+            var gitHubService = Container.Resolve<GitHubService>();
             await gitHubService.ExtractCommitDocuments("aspnet", "Docs", "cb5fc228c857cfabbc128385a628b95f89232469");
         }
 
         public static async Task Work() {
 
             AutoMapperHelper.InitMappings();
-            var ghService = new IssueReceiveService();
+            Container = AutoFacHelper.InitAutoFac();
+
+            var ghService = Container.Resolve<IssueReceiveService>();
 
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;
@@ -106,7 +99,7 @@ namespace AspNetDevNews
             }
 
             DateTime dtFine = DateTime.Now;
-            var stgService = new AzureTableStorageService();
+            var stgService = Container.Resolve<IStorageService>();
             await stgService.ReportExecution(dtInizio, dtFine, twitted, checkedRepositories, updated, postedLink);
         }
 

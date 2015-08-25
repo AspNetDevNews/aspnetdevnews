@@ -11,15 +11,16 @@ namespace AspNetDevNews.Services
 {
     public class TwitterService: ITwitterService
     {
-        public TwitterService() {
-            this.Settings = new SettingsService();
-            this.Storage = new AzureTableStorageService();
-        }
+        //public TwitterService()
+        //{
+        //    this.Settings = new SettingsService();
+        //    this.Storage = new AzureTableStorageService();
+        //}
 
         public TwitterService(ISettingsService settings, IStorageService storage) {
-            if (Settings == null)
+            if (settings == null)
                 throw new ArgumentNullException("Settings cannot be null");
-            if (Storage == null)
+            if (storage == null)
                 throw new ArgumentNullException("Storage cannot be null");
 
             this.Settings = settings;

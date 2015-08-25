@@ -15,10 +15,13 @@ namespace AspNetDevNews.Services.AzureTableStorage
     {
         private ISettingsService Settings { get; set; }
 
-        public AzureTableStorageService() {
-            this.Settings = new SettingsService();
-        }
+        // Devo togliere le referenze, poi lo posso cancellare
+        //public AzureTableStorageService()
+        //{
+        //    this.Settings = new SettingsService();
+        //}
 
+        // used by AutoFac
         public AzureTableStorageService(ISettingsService settings) {
             if (settings == null)
                 throw new ArgumentNullException("settings cannot be null");

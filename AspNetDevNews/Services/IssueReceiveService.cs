@@ -17,19 +17,20 @@ namespace AspNetDevNews.Services
         private ITwitterService TwitterService { get; set; }
         private IFeedReaderService FeedReaderService { get; set; }
 
-        public IssueReceiveService() {
-            this.SettingsService = new SettingsService();
-            this.GitHubService = new GitHubService();
-            this.FeedReaderService = new FeedReaderService();
 
-            this.StorageService = new AzureTableStorageService();
-//            this.StorageService = new ReadOnlyAzureStorageTableService();
+        // da rimuovere
+        public IssueReceiveService()
+        {
+            //this.SettingsService = new SettingsService();
+            //this.GitHubService = new GitHubService();
+            //this.FeedReaderService = new FeedReaderService();
 
-            this.TwitterService = new TwitterService();
-//            this.TwitterService = new ReadOnlyTwitterService();
+            //this.StorageService = new AzureTableStorageService();
+            //this.TwitterService = new TwitterService();
         }
 
-        public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, ITwitterService twitterService ) {
+        public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, 
+            ITwitterService twitterService, IFeedReaderService feedReaderService ) {
             if (gitHubService == null)
                 throw new ArgumentNullException(nameof(gitHubService), "gitHubService cannot be null");
             if (storageService == null)
@@ -38,11 +39,14 @@ namespace AspNetDevNews.Services
                 throw new ArgumentNullException(nameof(settingsService), "settingsService cannot be null");
             if (twitterService == null)
                 throw new ArgumentNullException(nameof(twitterService), "twitterService cannot be null");
+            if (feedReaderService == null)
+                throw new ArgumentNullException(nameof(feedReaderService), "feedReaderService cannot be null");
 
             this.GitHubService = gitHubService;
             this.StorageService = storageService;
             this.SettingsService = settingsService;
             this.TwitterService = twitterService;
+            this.FeedReaderService = feedReaderService;
         }
 
         public IEnumerable<string> Organizations {

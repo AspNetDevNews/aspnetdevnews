@@ -16,9 +16,10 @@ namespace AspNetDevNews.Services.Feeds
     {
         private ISettingsService Settings { get; set; }
 
-        public FeedReaderService() {
-            Settings = new SettingsService();
-        }
+        //public FeedReaderService()
+        //{
+        //    Settings = new SettingsService();
+        //}
 
         public FeedReaderService(ISettingsService settings) {
             Settings = settings;
