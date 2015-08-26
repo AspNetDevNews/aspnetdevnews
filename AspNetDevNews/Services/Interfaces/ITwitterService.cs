@@ -9,7 +9,8 @@ namespace AspNetDevNews.Services.Interfaces
 {
     public interface ITwitterService
     {
-        Task<IList<TwittedIssue>> SendIssues(IList<Models.Issue> issues);
-        Task<IList<TwittedPost>> SendPosts(IList<Models.FeedItem> links);
+        Task<IList<TwittedIssue>> Send(IList<Models.Issue> issues);
+        Task<IList<TwittedPost>> Send(IList<Models.FeedItem> links);
+        Task<IList<TwittedGitHubHostedDocument>> Send(IList<Models.GitHubHostedDocument> docs);
     }
 }

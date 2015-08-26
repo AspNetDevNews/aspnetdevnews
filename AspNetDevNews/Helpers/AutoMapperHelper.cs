@@ -59,13 +59,25 @@ namespace AspNetDevNews.Helpers
             Mapper.CreateMap<Models.Issue, Models.TwittedIssue>();
             // OK
             Mapper.CreateMap<Models.FeedItem, Models.TwittedPost>();
+            Mapper.CreateMap<Models.GitHubHostedDocument, Models.TwittedGitHubHostedDocument>();
+
+            // OK
+            Mapper.CreateMap<TwittedGitHubHostedDocumentEntity, Models.GitHubHostedDocument>()
+                .ForMember(dest => dest.Organization, opts => opts.MapFrom(src => src.PartitionKey.Split(new char[] { '+' })[0]))
+                .ForMember(dest => dest.Repository, opts => opts.MapFrom(src => src.PartitionKey.Split(new char[] { '+' })[1]));
+
+            Mapper.CreateMap<Models.TwittedGitHubHostedDocument, TwittedGitHubHostedDocumentEntity>()
+                .ForMember(dest => dest.PartitionKey, opts => opts.MapFrom(src => src.GetPartitionKey()))
+                .ForMember(dest => dest.RowKey, opts => opts.MapFrom(src => src.GetRowKey()))
+                .ForMember(dest => dest.TsCommit, opts => opts.MapFrom(src => src.TsCommit.DateTime))
+                .ForMember(dest => dest.StatusId, opts => opts.MapFrom(src => src.StatusID.ToString()));
         }
 
         public class PublishDateResolver : ValueResolver<SyndicationItem, string>
         {
             protected override string ResolveCore(SyndicationItem src)
             {
-                if (src.Id.ToLower().StartsWith("http"))
+                if (src.Id.ToLower().StartsWith("http", StringComparison.Ordinal))
                     return src.Id;
                 else if (src.Links.Count > 0)
                     return src.Links[0].Uri.ToString();

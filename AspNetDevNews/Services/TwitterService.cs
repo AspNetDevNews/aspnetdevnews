@@ -11,17 +11,11 @@ namespace AspNetDevNews.Services
 {
     public class TwitterService: ITwitterService
     {
-        //public TwitterService()
-        //{
-        //    this.Settings = new SettingsService();
-        //    this.Storage = new AzureTableStorageService();
-        //}
-
         public TwitterService(ISettingsService settings, IStorageService storage) {
             if (settings == null)
-                throw new ArgumentNullException("Settings cannot be null");
+                throw new ArgumentNullException(nameof(settings), "Settings cannot be null");
             if (storage == null)
-                throw new ArgumentNullException("Storage cannot be null");
+                throw new ArgumentNullException(nameof(storage), "Storage cannot be null");
 
             this.Settings = settings;
             this.Storage = storage;
@@ -30,7 +24,7 @@ namespace AspNetDevNews.Services
         private ISettingsService Settings { get; set; } 
         private IStorageService Storage { get; set; }
 
-        public async Task<IList<TwittedIssue>> SendIssues(IList<Models.Issue> issues) {
+        public async Task<IList<TwittedIssue>> Send(IList<Models.Issue> issues) {
 
             var authorizer = new SingleUserAuthorizer
                  {
@@ -45,29 +39,23 @@ namespace AspNetDevNews.Services
             using (var twitterCtx = new TwitterContext(authorizer))
             {
                 List<TwittedIssue> twittedIssues = new List<TwittedIssue>();
+                List<string> twittedMessages = new List<string>();
 
                 foreach (var issue in issues) {
                     try
                     {
-                        var tweet = await twitterCtx.TweetAsync(issue.GetTwitterText());
+                        var message = issue.GetTwitterText();
+                        if (twittedMessages.Contains(message))
+                            continue;
 
-                        // OK
-                        //twittedIssue.Title = issue.Title;
-                        //twittedIssue.Url = issue.Url;
-                        //twittedIssue.Labels = issue.Labels;
-                        //twittedIssue.Organization = issue.Organization;
-                        //twittedIssue.Repository = issue.Repository;
-                        //twittedIssue.CreatedAt = issue.CreatedAt;
-                        //twittedIssue.Number = issue.Number;
-                        //twittedIssue.UpdatedAt = issue.UpdatedAt;
-                        //twittedIssue.StatusID = tweet.StatusID;
-                        //twittedIssue.Body = issue.Body;
-                        //twittedIssue.Comments = issue.Comments;
+                        var tweet = await twitterCtx.TweetAsync(issue.GetTwitterText());
 
                         var twittedIssue = AutoMapper.Mapper.Map<TwittedIssue>(issue);
                         twittedIssue.StatusID = tweet.StatusID;
 
                         twittedIssues.Add(twittedIssue);
+
+                        twittedMessages.Add(message);
                     }
                     catch (Exception exc) {
                         await Storage.Store(exc, issue, "SendIssues");
@@ -77,7 +65,7 @@ namespace AspNetDevNews.Services
             }
         }
 
-        public async Task<IList<TwittedPost>> SendPosts( IList<FeedItem> links) {
+        public async Task<IList<TwittedPost>> Send( IList<FeedItem> links) {
             var authorizer = new SingleUserAuthorizer
             {
                 CredentialStore = new SingleUserInMemoryCredentialStore
@@ -91,26 +79,24 @@ namespace AspNetDevNews.Services
             using (var twitterCtx = new TwitterContext(authorizer))
             {
                 List<TwittedPost> twittedIssues = new List<TwittedPost>();
+                List<string> twittedMessages = new List<string>();
 
                 foreach (var post in links)
                 {
                     try
                     {
+                        var message = post.GetTwitterText();
+                        if (twittedMessages.Contains(message))
+                            continue;
+
                         var tweet = await twitterCtx.TweetAsync(post.GetTwitterText());
-                        // OK
-                        //var twittedIssue = new TwittedPost();
-                        //twittedIssue.Title = post.Title;
-                        //twittedIssue.Id = post.Id;
-                        //twittedIssue.PublishDate = post.PublishDate;
-                        //twittedIssue.Summary = post.Summary;
-                        //twittedIssue.Title = post.Title;
-                        //twittedIssue.StatusID = tweet.StatusID;
-                        //twittedIssue.Feed = post.Feed;
 
                         var twittedIssue = AutoMapper.Mapper.Map<TwittedPost>(post);
                         twittedIssue.StatusID = tweet.StatusID;
 
                         twittedIssues.Add(twittedIssue);
+
+                        twittedMessages.Add(message);
                     }
                     catch (Exception exc)
                     {
@@ -120,5 +106,49 @@ namespace AspNetDevNews.Services
                 return twittedIssues;
             }
         }
+
+        public async Task<IList<TwittedGitHubHostedDocument>> Send(IList<Models.GitHubHostedDocument> docs)
+        {
+            var authorizer = new SingleUserAuthorizer
+            {
+                CredentialStore = new SingleUserInMemoryCredentialStore
+                {
+                    ConsumerKey = this.Settings.TwitterConsumerKey,
+                    ConsumerSecret = this.Settings.TwitterConsumerSecret,
+                    AccessToken = this.Settings.TwitterAccessToken,
+                    AccessTokenSecret = this.Settings.TwitterAccessTokenSecret
+                }
+            };
+            using (var twitterCtx = new TwitterContext(authorizer))
+            {
+                List<TwittedGitHubHostedDocument> twittedIssues = new List<TwittedGitHubHostedDocument>();
+                List<string> twittedMessages = new List<string>();
+
+                foreach (var document in docs)
+                {
+                    try
+                    {
+                        var message = document.GetTwitterText();
+                        if (twittedMessages.Contains(message))
+                            continue;
+
+                        var tweet = await twitterCtx.TweetAsync(document.GetTwitterText());
+
+                        var twittedIssue = AutoMapper.Mapper.Map<TwittedGitHubHostedDocument>(document);
+                        twittedIssue.StatusID = tweet.StatusID;
+
+                        twittedIssues.Add(twittedIssue);
+
+                        twittedMessages.Add(message);
+                    }
+                    catch (Exception exc)
+                    {
+                        await Storage.Store(exc, document, "SendDocuments");
+                    }
+                }
+                return twittedIssues;
+            }
+        }
+
     }
 }

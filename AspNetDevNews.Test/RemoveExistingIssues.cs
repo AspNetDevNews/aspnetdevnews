@@ -25,7 +25,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var issues = await sut.RemoveExisting(test);
+                var issues = sut.RemoveExisting(test);
 
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0, issues.Count);
@@ -46,7 +46,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var cleanedIssues = await sut.RemoveExisting(issues);
+                var cleanedIssues = sut.RemoveExisting(issues);
                 Assert.IsNotNull(cleanedIssues);
                 Assert.AreEqual(0, cleanedIssues.Count);
             }
@@ -68,7 +68,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                await sut.RemoveExisting(issues);
+                sut.RemoveExisting(issues);
                 Assert.AreEqual(issues.Count, numKeys);
             }
         }
@@ -83,7 +83,7 @@ namespace AspNetDevNews.Test
                 issues.Add(new Issue { Organization = "org", Repository = "repo2", Number = 1 });
                 var sut = mock.Create<IssueReceiveService>();
 
-                var cleanedIssues = await sut.RemoveExisting(issues);
+                var cleanedIssues = sut.RemoveExisting(issues);
             }
         }
 
@@ -108,7 +108,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var cleanedIssues = await sut.RemoveExisting(issues);
+                var cleanedIssues = sut.RemoveExisting(issues);
 
                 Assert.IsNotNull(cleanedIssues);
                 Assert.AreEqual(1, cleanedIssues.Count);
@@ -137,7 +137,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var cleanedIssues = await sut.RemoveExisting(issues);
+                var cleanedIssues = sut.RemoveExisting(issues);
                 Assert.IsNotNull(cleanedIssues);
                 Assert.AreEqual(1, cleanedIssues.Count);
                 Assert.AreEqual(issues[1].Number, cleanedIssues[0].Number);
@@ -163,7 +163,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var cleanedIssues = await sut.RemoveExisting(issues);
+                var cleanedIssues = sut.RemoveExisting(issues);
                 Assert.IsNotNull(cleanedIssues);
                 Assert.AreEqual(0, cleanedIssues.Count);
             }

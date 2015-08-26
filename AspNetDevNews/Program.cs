@@ -11,9 +11,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-// Add AutoFac
 // use autofac to resolve TwitterContext, to make sendIssues routine testable, get tables in azure storage to make store testable
 // add logger as instance and store everything in a blob
+// store exception, use ITableEntity as parameter so I can use the same routine
+// publish and store method use the same name
 
 // azuretablestorage: store methods, checks that ExecuteBatchAsync isn't called  if list is empty
 // more parameters validation in azurestorageservice
@@ -26,7 +27,7 @@ namespace AspNetDevNews
 
         static void Main(string[] args)
         {
-//            Merges().Wait();
+            //Merges().Wait();
 
             Work().Wait();
         }
@@ -36,11 +37,14 @@ namespace AspNetDevNews
             AutoMapperHelper.InitMappings();
             Container = AutoFacHelper.InitAutoFac();
 
-            var ghService = Container.Resolve<IGitHubService>();
-            var azService = Container.Resolve<IStorageService>();
+            var service = Container.Resolve<IssueReceiveService>();
+            var documents = await service.RecentGitHubDocuments("aspnet", "Docs");
+            documents = service.RemoveExisting(documents);
+            // publish the new links
+            var twittedDocs = await service.PublishNewDocuments(documents);
+            // store in the storage the data about the new issues
+            await service.StorePublishedDocuments(twittedDocs);
 
-            var gitHubService = Container.Resolve<GitHubService>();
-            await gitHubService.ExtractCommitDocuments("aspnet", "Docs", "cb5fc228c857cfabbc128385a628b95f89232469");
         }
 
         public static async Task Work() {
@@ -56,7 +60,15 @@ namespace AspNetDevNews
             int updated = 0;
             int postedLink = 0;
 
-            //// web posts processing
+            // documents update processing
+            var documents = await ghService.RecentGitHubDocuments("aspnet", "Docs");
+            documents = ghService.RemoveExisting(documents);
+            // publish the new links
+            var twittedDocs = await ghService.PublishNewDocuments(documents);
+            // store in the storage the data about the new issues
+            await ghService.StorePublishedDocuments(twittedDocs);
+
+            // web posts processing
             foreach (var feed in ghService.Feeds)
             {
                 // get recent posts
@@ -83,12 +95,12 @@ namespace AspNetDevNews
                     // get the latest issues archived
                     var storageIssues = await ghService.CheckInStorage(organization, repository, gitHubIssues);
                     // check for updates
-                    var changed = await ghService.IssuesToUpdate(gitHubIssues, storageIssues);
+                    var changed = ghService.IssuesToUpdate(gitHubIssues, storageIssues);
                     // if updated ones, merge the changes
                     await ghService.Merge(changed);
                     // remove from the list the ones already in the storage, keeping just the ones 
                     // I have to tweet and store
-                    gitHubIssues = await ghService.RemoveExisting(gitHubIssues);
+                    gitHubIssues = ghService.RemoveExisting(gitHubIssues);
                     // publish the new issues
                     var twittedIssues = await ghService.PublishNewIssues(gitHubIssues);
                     // store in the storage the data about the new issues

@@ -57,7 +57,7 @@ namespace AspNetDevNews.Services
             get { return new List<string> { "http://webdevblogs.azurewebsites.net/master.xml" }; }
         }
 
-        public async Task<IList<Issue>> IssuesToUpdate(IList<Issue> issues, IList<Issue> lastStored)
+        public IList<Issue> IssuesToUpdate(IList<Issue> issues, IList<Issue> lastStored)
         {
             List<Models.Issue> toUpdate = new List<Models.Issue>();
 
@@ -129,7 +129,7 @@ namespace AspNetDevNews.Services
             }
             catch (Exception exc)
             {
-                await this.StorageService.Store(exc, null, "RecentIssues");
+                await this.StorageService.Store( exception: exc, issue: null, operation: "RecentIssues");
                 return new List<Models.Issue>();
             }
         }
@@ -169,7 +169,7 @@ namespace AspNetDevNews.Services
             await this.StorageService.Merge(issues);
         }
 
-        public async Task<IList<Models.Issue>> RemoveExisting(IList<Issue> issues)
+        public IList<Models.Issue> RemoveExisting(IList<Issue> issues)
         {
             List<Models.Issue> result = new List<Models.Issue>();
             if (issues == null || issues.Count == 0)
@@ -249,11 +249,51 @@ namespace AspNetDevNews.Services
 
         }
 
+        public IList<Models.GitHubHostedDocument> RemoveExisting(IList<GitHubHostedDocument> issues)
+        {
+            List<GitHubHostedDocument> result = new List<GitHubHostedDocument>();
+            if (issues == null || issues.Count == 0)
+                return result;
+
+            string partitionKey = issues[0].GetPartitionKey();
+
+            List <string> RowKeysToScan = new List<string>();
+            foreach (var issue in issues)
+            {
+                if (issue.GetPartitionKey() != partitionKey )
+                    throw new ApplicationException("Can process only posts from the same repository");
+                RowKeysToScan.Add(issue.GetRowKey());
+            }
+
+            try
+            {
+                var issuesFound = this.StorageService.GetBatchDocuments(partitionKey, RowKeysToScan);
+
+                foreach (var issue in issues)
+                {
+                    bool inArchive = false;
+                    foreach (var issueFound in issuesFound)
+                    {
+                        if (issue.GetRowKey() == issueFound.GetRowKey())
+                            inArchive = true;
+                    }
+                    if (!inArchive)
+                        result.Add(issue);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new List<GitHubHostedDocument>();
+            }
+
+        }
+
 
         public async Task<IList<Models.TwittedIssue>> PublishNewIssues(IList<Models.Issue> issues) {
             if (issues == null || issues.Count == 0)
                 return new List<Models.TwittedIssue>();
-            return await this.TwitterService.SendIssues(issues);
+            return await this.TwitterService.Send(issues);
         }
 
         public async Task StorePublishedIssues(IList<Models.TwittedIssue> twittedIssues) {
@@ -276,12 +316,12 @@ namespace AspNetDevNews.Services
             // get the latest issues archived
             var lastStored = await CheckInStorage(organization, repository, issues);
             // check for updates
-            var changed = await IssuesToUpdate(issues, lastStored);
+            var changed = IssuesToUpdate(issues, lastStored);
             // if updated ones, merge the changes
             await Merge(changed);
             // remove from the list the ones already in the storage, keeping just the ones 
             // I have to tweet and store
-            issues = await RemoveExisting(issues);
+            issues = RemoveExisting(issues);
             // publish the new issues
             var twittedIssues = await PublishNewIssues(issues);
             // store in the storage the data about the new issues
@@ -301,7 +341,14 @@ namespace AspNetDevNews.Services
         {
             if (posts == null || posts.Count == 0)
                 return new List<TwittedPost>();
-            return await this.TwitterService.SendPosts(posts);
+            return await this.TwitterService.Send(posts);
+        }
+
+        public async Task<IList<TwittedGitHubHostedDocument>> PublishNewDocuments(IList<GitHubHostedDocument> posts)
+        {
+            if (posts == null || posts.Count == 0)
+                return new List<TwittedGitHubHostedDocument>();
+            return await this.TwitterService.Send(posts);
         }
 
         public async Task StorePublishedPosts(IList<Models.TwittedPost> twittedPosts)
@@ -309,6 +356,23 @@ namespace AspNetDevNews.Services
             if (twittedPosts == null || twittedPosts.Count == 0)
                 return;
             await this.StorageService.Store(twittedPosts);
+        }
+
+        public async Task StorePublishedDocuments(IList<Models.TwittedGitHubHostedDocument> twittedDocuments)
+        {
+            if (twittedDocuments == null || twittedDocuments.Count == 0)
+                return;
+            await this.StorageService.Store(twittedDocuments);
+        }
+
+        public async Task<IList<GitHubHostedDocument>> RecentGitHubDocuments(string organization, string repository) {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+            if (string.IsNullOrWhiteSpace(repository))
+                throw new ArgumentNullException(nameof(repository), "repository must be specified");
+
+            // get recent created or modified issues
+            return await this.GitHubService.ExtractCommitDocuments(organization, repository);
         }
 
     }

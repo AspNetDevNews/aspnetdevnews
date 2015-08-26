@@ -1,5 +1,4 @@
 ﻿using AspNetDevNews.Services.Interfaces;
-using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,10 +28,10 @@ namespace AspNetDevNews.Services
             this.Settings = settings;
         }
 
-        private GitHubClient GetClient()
+        private Octokit.GitHubClient GetClient()
         {
-            var client = new GitHubClient(new ProductHeaderValue(this.Settings.GitHubAppName));
-            var basicAuth = new Credentials(this.Settings.GitHubUserId, this.Settings.GitHubPassword);
+            var client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue(this.Settings.GitHubAppName));
+            var basicAuth = new Octokit.Credentials(this.Settings.GitHubUserId, this.Settings.GitHubPassword);
             client.Credentials = basicAuth;
             return client;
         }
@@ -56,7 +55,7 @@ namespace AspNetDevNews.Services
                 throw new ArgumentNullException(nameof(repository), "repository must be specified");
 
             var client = GetClient();
-            var request = new RepositoryIssueRequest();
+            var request = new Octokit.RepositoryIssueRequest();
             request.Since = since;
 
             try
@@ -104,7 +103,7 @@ namespace AspNetDevNews.Services
         public async Task GetRecentReleases(string organization, string repository) {
             var client = GetClient();
 
-            var merged = new List<Release>();
+            var merged = new List<Octokit.Release>();
             var releases = await client.Release.GetAll( organization, repository);
 
             foreach (var release in releases) {
@@ -114,63 +113,42 @@ namespace AspNetDevNews.Services
             }
         }
 
-        private static bool SetAllowUnsafeHeaderParsing(bool value)
-        {
-            //Get the assembly that contains the internal class  
-            Assembly aNetAssembly = Assembly.GetAssembly(typeof(System.Net.Configuration.SettingsSection));
-            if (aNetAssembly != null)
-            {
-                //Use the assembly in order to get the internal type for the internal class  
-                Type aSettingsType = aNetAssembly.GetType("System.Net.Configuration.SettingsSectionInternal");
-                if (aSettingsType != null)
-                {
-                    //Use the internal static property to get an instance of the internal settings class.  
-                    //If the static instance isn't created allready the property will create it for us.  
-                    object anInstance = aSettingsType.InvokeMember("Section",
-                      BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
+        public async Task<IList<GitHubHostedDocument>> ExtractCommitDocuments(string organization, string repository) {
 
-                    if (anInstance != null)
-                    {
-                        //Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not  
-                        FieldInfo aUseUnsafeHeaderParsing = aSettingsType.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
-                        if (aUseUnsafeHeaderParsing != null)
-                        {
-                            aUseUnsafeHeaderParsing.SetValue(anInstance, value);
-                            return true;
-                        }
+            var client = GetClient();
+            var documents = new List<GitHubHostedDocument>();
+
+            Octokit.CommitRequest request = new Octokit.CommitRequest();
+//            request.Since = new DateTimeOffset(DateTime.Now.AddDays(-7));
+            request.Since = this.Settings.Since;
+            request.Sha = "master";
+
+            // get all the latest commits for the master branch 
+            var commits = await client.Repository.Commits.GetAll(organization, repository, request);
+            // recover the data of the branch looking for the master
+            var repo = await client.Repository.GetBranch(organization, repository, "master");
+
+            var head = repo.Commit.Sha;
+
+            foreach (var currentCommit in commits) {
+                var compareResult = await client.Repository.Commits.Compare(organization, repository, currentCommit.Sha, head);
+                head = currentCommit.Sha;
+
+                foreach (var file in compareResult.Files) {
+                    if (file.Filename.ToLower().EndsWith(".rst", StringComparison.Ordinal)) { 
+                        var fileData = new GitHubHostedDocument();
+                        fileData.Commit = currentCommit.Sha;
+                        fileData.FileName = file.Filename;
+                        fileData.Status = file.Status;
+                        fileData.TsCommit = currentCommit.Commit.Committer.Date;
+                        fileData.Organization = organization;
+                        fileData.Repository = repository;
+
+                        documents.Add(fileData);
                     }
                 }
             }
-            return false;
-        }
-        // http://dejanstojanovic.net/aspnet/2014/october/the-server-committed-a-protocol-violation-section-responsestatusline/
-        public async Task<IList<string>> ExtractCommitDocuments(string organization, string repository, string commit) {
-            var client = GetClient();
-            var documents = new List<string>();
-
-            SetAllowUnsafeHeaderParsing(true);
-
-            var commitData = await client.GitDatabase.Commit.Get(organization, repository, commit);
-
-            var repo = await client.Repository.GetBranch(organization, repository, "master");
-            repo.Commit.Url.ToString();
-
-            var myCommit = RestHelper.Get<string>("https://api.github.com/repos/aspnet/Docs/commits/", "cb5fc228c857cfabbc128385a628b95f89232469");
-
-            ////commitData.Tree
-            //var tree = await client.GitDatabase.Tree.Get(organization, repository, commitData.Tree.Sha);
-            //foreach (var elemento in tree.Tree) {
-            //    if (elemento.Type == TreeType.Blob && elemento.Path.ToLower().EndsWith(".rst"))
-            //        documents.Add(elemento.Path);
-            //    if (elemento.Type == TreeType.Tree) {
-            //        var test = await client.GitDatabase.Tree.Get(organization, repository, elemento.Sha);
-            //    }
-            //}
-
-            //var blob = await client.GitDatabase.Blob.Get(organization, repository, commitData.Tree.Sha);
-            var deploy = await client.Deployment.GetAll(organization, repository);
-
-            return null;
+            return documents;
         }
 
     }

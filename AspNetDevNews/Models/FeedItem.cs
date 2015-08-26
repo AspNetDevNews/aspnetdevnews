@@ -17,7 +17,7 @@ namespace AspNetDevNews.Models
         public string GetTwitterText()
         {
             string title = this.Title.Trim();
-            if (!title.EndsWith("."))
+            if (!title.EndsWith(".", StringComparison.Ordinal))
                 title += ".";
             return "[Blog]: " + title + " " + this.Id;
         }

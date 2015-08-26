@@ -11,7 +11,7 @@ namespace AspNetDevNews.Services
     public class ReadOnlyTwitterService : ITwitterService
     {
         public List<TwittedIssue> Sent { get; set; }
-        public async Task<IList<TwittedIssue>> SendIssues(IList<Issue> issues)
+        public async Task<IList<TwittedIssue>> Send(IList<Issue> issues)
         {
            return Sent;
         }
@@ -21,7 +21,12 @@ namespace AspNetDevNews.Services
             throw new NotImplementedException();
         }
 
-        Task<IList<TwittedPost>> ITwitterService.SendPosts(IList<FeedItem> links)
+        Task<IList<TwittedPost>> ITwitterService.Send(IList<FeedItem> links)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IList<TwittedGitHubHostedDocument>> Send(IList<GitHubHostedDocument> docs)
         {
             throw new NotImplementedException();
         }

@@ -27,12 +27,19 @@ namespace AspNetDevNews.Models
         {
             return Number.ToString();
         }
+
+        public string PlainLabels {
+            get {
+                return this.Labels != null ? string.Join(";", this.Labels) : string.Empty;
+            }
+        }
+
         public string GetTwitterText() {
             string title = this.Title.Trim();
             if (!title.EndsWith("."))
                 title += ".";
-//            return "[" + this.Repository + "]: " + title + " " + this.Url;
-            return "[" + this.Labels + "]: " + title + " " + this.Url;
+            //            return "[" + this.Repository + "]: " + title + " " + this.Url;
+            return "[" + PlainLabels + "]: " + title + " " + this.Url;
         }
 
     }

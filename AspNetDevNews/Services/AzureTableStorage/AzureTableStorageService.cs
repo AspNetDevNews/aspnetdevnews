@@ -15,16 +15,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
     {
         private ISettingsService Settings { get; set; }
 
-        // Devo togliere le referenze, poi lo posso cancellare
-        //public AzureTableStorageService()
-        //{
-        //    this.Settings = new SettingsService();
-        //}
-
-        // used by AutoFac
         public AzureTableStorageService(ISettingsService settings) {
             if (settings == null)
-                throw new ArgumentNullException("settings cannot be null");
+                throw new ArgumentNullException( nameof(settings), "settings cannot be null");
             this.Settings = settings;
         }
 
@@ -76,6 +69,15 @@ namespace AspNetDevNews.Services.AzureTableStorage
             return table;
         }
 
+        private CloudTable GetDocumentsTable()
+        {
+            CloudTableClient client = GetClient();
+
+            CloudTable table = client.GetTableReference("twittedGitHubDocuments");
+            table.CreateIfNotExists();
+            return table;
+        }
+
         #endregion
 
         #region insert and update entities
@@ -91,24 +93,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 foreach (var issue in issues)
                 {
-                    // OK
-                    //var twittedIssue = new TwittedIssueEntity(issue.GetPartitionKey(), issue.GetRowKey());
-                    //twittedIssue.Title = issue.Title;
-                    //twittedIssue.Url = issue.Url;
-                    //twittedIssue.Labels = string.Join(";", issue.Labels);
-                    //twittedIssue.CreatedAt = issue.CreatedAt;
-                    //twittedIssue.UpdatedAt = issue.UpdatedAt;
-                    //twittedIssue.StatusId = issue.StatusID.ToString(); // I have to save as string because
-                    //twittedIssue.Body = issue.Body;
-                    //twittedIssue.TwittedAt = DateTime.Now;
-                    //twittedIssue.State = issue.State;
-                    //twittedIssue.Comments = issue.Comments;
-
                     var twittedIssue = AutoMapper.Mapper.Map<TwittedIssueEntity>(issue);
-                    //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
-                    //TableOperation insertOperation = TableOperation.InsertOrReplace(entity);
-                    //await table.ExecuteAsync(insertOperation);
-                    //table.Execute(insertOperation);
                     batchOperation.Insert(twittedIssue);
 
                 }
@@ -200,6 +185,32 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
+        public async Task Store(IList<TwittedGitHubHostedDocument> documents)
+        {
+            if (documents == null || documents.Count == 0)
+                return;
+
+            try
+            {
+                var table = GetDocumentsTable();
+                TableBatchOperation batchOperation = new TableBatchOperation();
+
+                foreach (var document in documents)
+                {
+                    var twittedIssue = AutoMapper.Mapper.Map<TwittedGitHubHostedDocumentEntity>(document);
+                    batchOperation.Insert(twittedIssue);
+                }
+                if (batchOperation.Count() > 0)
+                {
+                    var result = await table.ExecuteBatchAsync(batchOperation);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
         #endregion
         public async Task Store(Exception exception, Issue issue, string operation)
         {
@@ -215,6 +226,32 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 var storeException = new ExceptionEntity(operation, DateTime.Now.GetRowKey());
                 storeException.TwitRowKey = issue.GetRowKey();
                 storeException.TwitPartitionKey = issue.GetPartitionKey();
+                storeException.CreatedAt = DateTime.Now;
+                storeException.Exception = JsonConvert.SerializeObject(exception);
+                storeException.Operation = operation;
+
+                TableOperation insertOperation = TableOperation.Insert(storeException);
+                var result = await table.ExecuteAsync(insertOperation);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+        public async Task Store(Exception exception, GitHubHostedDocument document, string operation)
+        {
+            if (exception == null)
+                return;
+            if (string.IsNullOrWhiteSpace(operation))
+                return;
+
+            try
+            {
+                var table = GetExceptionsTable();
+
+                var storeException = new ExceptionEntity(operation, DateTime.Now.GetRowKey());
+                storeException.TwitRowKey = document.GetRowKey();
+                storeException.TwitPartitionKey = document.GetPartitionKey();
                 storeException.CreatedAt = DateTime.Now;
                 storeException.Exception = JsonConvert.SerializeObject(exception);
                 storeException.Operation = operation;
@@ -363,6 +400,42 @@ namespace AspNetDevNews.Services.AzureTableStorage
             {
                 Console.WriteLine(ex);
                 return new List<Models.Issue>();
+            }
+        }
+
+        public IList<GitHubHostedDocument> GetBatchDocuments(string partitionKey, IList<string> rowKeys)
+        {
+            try
+            {
+                var table = GetDocumentsTable();
+ 
+                string filter = "(PartitionKey eq '" + partitionKey + "') and (";
+                string rowFilter = string.Empty;
+                foreach (var chiave in rowKeys)
+                {
+                    if (!string.IsNullOrWhiteSpace(rowFilter))
+                        rowFilter += " or ";
+
+                    rowFilter += " (RowKey eq '" + chiave + "') ";
+                }
+                filter += rowFilter + ")";
+
+                TableQuery<TwittedGitHubHostedDocumentEntity> query = new TableQuery<TwittedGitHubHostedDocumentEntity>().Where(filter);
+                var results = new List<GitHubHostedDocument>();
+
+                var alreadyStored = table.ExecuteQuery(query);
+                foreach (TwittedGitHubHostedDocumentEntity entity in alreadyStored)
+                {
+                    var issue = AutoMapper.Mapper.Map<GitHubHostedDocument>(entity);
+
+                    results.Add(issue);
+                }
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return new List<Models.GitHubHostedDocument>();
             }
         }
 

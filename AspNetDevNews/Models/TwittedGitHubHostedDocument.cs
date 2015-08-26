@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Models
 {
-    public class TwittedPost: FeedItem
+    public class TwittedGitHubHostedDocument: GitHubHostedDocument
     {
         public ulong StatusID { get; set; }
     }

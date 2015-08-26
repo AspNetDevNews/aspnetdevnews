@@ -32,7 +32,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var issues = await sut.IssuesToUpdate(null, new List<Models.Issue>());
+                var issues = sut.IssuesToUpdate(null, new List<Models.Issue>());
 
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0,issues.Count);
@@ -46,7 +46,7 @@ namespace AspNetDevNews.Test
             {
                 var sut = mock.Create<IssueReceiveService>();
 
-                var issues = await sut.IssuesToUpdate(new List<Models.Issue>(), null);
+                var issues = sut.IssuesToUpdate(new List<Models.Issue>(), null);
 
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0, issues.Count);
@@ -66,7 +66,7 @@ namespace AspNetDevNews.Test
                 var storageIssues = new List<Issue>();
                 storageIssues.Add(new Issue { Organization = "Org", Repository = "Repo", Number = 2 });
 
-                var issues = await sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
+                var issues = sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0, issues.Count);
             }
@@ -85,7 +85,7 @@ namespace AspNetDevNews.Test
                 var storageIssues = new List<Issue>();
                 storageIssues.Add(new Issue { Organization = "Org", Repository = "Repo", Number = 1, Title = "Title 2" });
 
-                var issues = await sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
+                var issues = sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
 
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(1,issues.Count);
@@ -106,7 +106,7 @@ namespace AspNetDevNews.Test
                 var storageIssues = new List<Issue>();
                 storageIssues.Add(new Issue { Organization = "Org", Repository = "Repo", Number = 1, UpdatedAt = DateTime.Now.AddHours(1) });
 
-                var issues = await sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
+                var issues = sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
 
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(1, issues.Count);
@@ -127,7 +127,7 @@ namespace AspNetDevNews.Test
                 var storageIssues = new List<Issue>();
                 storageIssues.Add(new Issue { Organization = "Org", Repository = "Repo", Number = 1, State = "Closed" });
 
-                var issues = await sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
+                var issues = sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(1, issues.Count);
                 Assert.AreEqual(gitHubIssues[0], issues[0]);
@@ -147,7 +147,7 @@ namespace AspNetDevNews.Test
                 var storageIssues = new List<Issue>();
                 storageIssues.Add(new Issue { Organization = "Org", Repository = "Repo", Number = 1, Comments = 1 });
 
-                var issues = await sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
+                var issues = sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(1, issues.Count);
                 Assert.AreEqual(gitHubIssues[0], issues[0]);
@@ -167,7 +167,7 @@ namespace AspNetDevNews.Test
                 var storageIssues = new List<Issue>();
                 storageIssues.Add(new Issue { Organization = "Org", Repository = "Repo", Number = 1, Title = "Title 1", UpdatedAt = DateTime.Today, Comments = 1 });
 
-                var issues = await sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
+                var issues = sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
 
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0, issues.Count);
@@ -205,7 +205,7 @@ namespace AspNetDevNews.Test
                     Body = "Body 2"
                 });
 
-                var issues = await sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
+                var issues = sut.IssuesToUpdate(issues: gitHubIssues, lastStored: storageIssues);
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0, issues.Count);
             }
