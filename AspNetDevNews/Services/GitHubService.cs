@@ -14,17 +14,11 @@ namespace AspNetDevNews.Services
     {
         private ISettingsService Settings { get; set; }
 
-        // Devo togliere le referenze, poi lo posso cancellare
-        //public GitHubService()
-        //{
-        //    this.Settings = new SettingsService();
-        //}
-
         // Used by AutoFac
         public GitHubService(ISettingsService settings)
         {
             if (settings == null)
-                throw new ArgumentNullException("settings cannot be null");
+                throw new ArgumentNullException(nameof(settings), "settings cannot be null");
             this.Settings = settings;
         }
 
@@ -38,6 +32,9 @@ namespace AspNetDevNews.Services
 
         public async Task<IEnumerable<string>> Repositories(string organization)
         {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException(nameof(organization), "settings cannot be null or empty");
+
             var repositoriesNames = new List<string>();
             var client = GetClient();
 
@@ -72,20 +69,6 @@ namespace AspNetDevNews.Services
                 var issuesToProcess = new List<Models.Issue>();
                 foreach (var issue in issues)
                 {
-                    // OK
-                    //var issueToProcess = new Models.Issue();
-                    //issueToProcess.Title = issue.Title;
-                    //issueToProcess.Url = issue.HtmlUrl.ToString();
-                    //issueToProcess.Labels = issue.Labels.Select(lab => lab.Name).ToArray();
-                    //issueToProcess.Organization = organization;
-                    //issueToProcess.Repository = repository;
-                    //issueToProcess.CreatedAt = issue.CreatedAt.LocalDateTime;
-                    //issueToProcess.Number = issue.Number;
-                    //issueToProcess.UpdatedAt = issue.UpdatedAt?.LocalDateTime;
-                    //issueToProcess.Body = issue.Body;
-                    //issueToProcess.State = issue.State == 0 ? "Open" : "Closed";
-                    //issueToProcess.Comments = issue.Comments;
-
                     var issueToProcess = AutoMapper.Mapper.Map<Models.Issue>(issue);
                     issueToProcess.Organization = organization;
                     issueToProcess.Repository = repository;
@@ -100,26 +83,12 @@ namespace AspNetDevNews.Services
             }
         }
 
-        public async Task GetRecentReleases(string organization, string repository) {
-            var client = GetClient();
-
-            var merged = new List<Octokit.Release>();
-            var releases = await client.Release.GetAll( organization, repository);
-
-            foreach (var release in releases) {
-            }
-
-            foreach (var merge in merged) {
-            }
-        }
-
         public async Task<IList<GitHubHostedDocument>> ExtractCommitDocuments(string organization, string repository) {
 
             var client = GetClient();
             var documents = new List<GitHubHostedDocument>();
 
             Octokit.CommitRequest request = new Octokit.CommitRequest();
-//            request.Since = new DateTimeOffset(DateTime.Now.AddDays(-7));
             request.Since = this.Settings.Since;
             request.Sha = "master";
 

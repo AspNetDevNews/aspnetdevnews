@@ -14,16 +14,18 @@ namespace AspNetDevNews.Services.Interfaces
 
         Task Merge(IList<Models.Issue> issues);
 
-        Task Store(Exception exception, Models.Issue issue, string operation);
-        Task Store(Exception exception, string feedItem, Models.FeedItem post, string operation);
-        Task Store(Exception exception, Models.GitHubHostedDocument post, string operation);
+        //Task Store(Exception exception, Models.Issue issue, string operation);
+        //Task Store(Exception exception, Models.FeedItem post, string operation);
+        //Task Store(Exception exception, Models.GitHubHostedDocument post, string operation);
+        Task Store(Exception exception, Interfaces.ITableStorageKeyGet record, string operation);
+
 
         Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int UpdatedIssues, int postedLinks);
         Task<bool> Exists(Models.TwittedIssue issue);
-        Task<IList<Models.Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since);
+        IList<Models.Issue> GetRecentIssues(string organization, string repository, DateTimeOffset since);
 
         IList<Models.Issue> GetBatchIssues(string organization, string repository, IList<string> rowKeys);
         IList<Models.FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys);
-        IList<Models.GitHubHostedDocument> GetBatchDocuments(string partitionKey, IList<string> rowKeys);
+        IList<Models.GitHubHostedDocument> GetBatchDocuments(string organization, string repository, IList<string> rowKeys);
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using AspNetDevNews.Services.AzureTableStorage;
+using AspNetDevNews.Services.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Models
 {
-    public class FeedItem
+    public class FeedItem: ITableStorageKeyGet, IIsTweetable
     {
         public string Id { get; set; }
         public DateTime PublishDate { get; set; }
@@ -19,8 +21,22 @@ namespace AspNetDevNews.Models
             string title = this.Title.Trim();
             if (!title.EndsWith(".", StringComparison.Ordinal))
                 title += ".";
-            return "[Blog]: " + title + " " + this.Id;
+
+            string contentType = "blog";
+            if (Id.Contains("youtube.com") || Id.Contains("channel9.msdn.com") || Id.Contains("vimeo.com"))
+                contentType = "video";
+
+            return $"[{contentType}]: {title} " + this.Id;
         }
 
+        public string GetPartitionKey()
+        {
+            return TableStorageUtilities.EncodeToKey(Feed);
+        }
+
+        public string GetRowKey()
+        {
+            return TableStorageUtilities.EncodeToKey(Id);
+        }
     }
 }

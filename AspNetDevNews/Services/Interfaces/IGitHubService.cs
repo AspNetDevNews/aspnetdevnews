@@ -10,7 +10,6 @@ namespace AspNetDevNews.Services.Interfaces
     {
         Task<IEnumerable<string>> Repositories(string organization);
         Task<IEnumerable<Models.Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since);
-        Task GetRecentReleases(string organization, string repository);
         Task<IList<Models.GitHubHostedDocument>> ExtractCommitDocuments(string organization, string repository);
     }
 }

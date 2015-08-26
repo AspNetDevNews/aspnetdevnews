@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AspNetDevNews.Services.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Models
 {
-    public class Issue
+    public class Issue: ITableStorageKeyGet, IIsTweetable
     {
         public string Title { get; set; }
         public string Url { get; set; }
@@ -30,15 +31,14 @@ namespace AspNetDevNews.Models
 
         public string PlainLabels {
             get {
-                return this.Labels != null ? string.Join(";", this.Labels) : string.Empty;
+                return this.Labels != null ? string.Join(";", this.Labels).ToLower() : string.Empty;
             }
         }
 
         public string GetTwitterText() {
             string title = this.Title.Trim();
-            if (!title.EndsWith("."))
+            if (!title.EndsWith(".", StringComparison.Ordinal))
                 title += ".";
-            //            return "[" + this.Repository + "]: " + title + " " + this.Url;
             return "[" + PlainLabels + "]: " + title + " " + this.Url;
         }
 

@@ -32,7 +32,7 @@ namespace AspNetDevNews.Test
 
                 List<Issue> test = new List<Issue>();
 
-                var issues = await sut.CheckInStorage(null, ".", test);
+                var issues = sut.CheckInStorage(null, ".", test);
             }
         }
 
@@ -44,7 +44,7 @@ namespace AspNetDevNews.Test
                 var sut = mock.Create<IssueReceiveService>();
                 List<Issue> test = new List<Issue>();
 
-                var issues = await sut.CheckInStorage("", ".", test);
+                var issues = sut.CheckInStorage("", ".", test);
             }
         }
 
@@ -56,7 +56,7 @@ namespace AspNetDevNews.Test
 
                 List<Issue> test = new List<Issue>();
 
-                var issues = await sut.CheckInStorage(".", "", test);
+                var issues = sut.CheckInStorage(".", "", test);
             }
         }
 
@@ -69,7 +69,7 @@ namespace AspNetDevNews.Test
 
                 List<Issue> test = new List<Issue>();
 
-                var issues = await sut.CheckInStorage(".", null, test);
+                var issues = sut.CheckInStorage(".", null, test);
             }
         }
 
@@ -82,7 +82,7 @@ namespace AspNetDevNews.Test
 
                 List<Issue> test = new List<Issue>();
 
-                var issues = await sut.CheckInStorage(".", ".", null);
+                var issues = sut.CheckInStorage(".", ".", null);
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0, issues.Count);
             }
@@ -97,7 +97,7 @@ namespace AspNetDevNews.Test
 
                 List<Issue> test = new List<Issue>();
 
-                var issues = await sut.CheckInStorage(".", ".", test);
+                var issues = sut.CheckInStorage(".", ".", test);
                 Assert.IsNotNull(issues);
                 Assert.AreEqual(0, issues.Count);
             }
@@ -125,7 +125,7 @@ namespace AspNetDevNews.Test
 
                 mock.Provide<IStorageService>(stgMock.Object);
 
-                var cleanedIssues = await sut.CheckInStorage(".", ".", issues);
+                var cleanedIssues = sut.CheckInStorage(".", ".", issues);
                 Assert.IsNotNull(cleanedIssues);
                 Assert.AreEqual(0, cleanedIssues.Count);
             }
@@ -148,7 +148,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var check = await sut.CheckInStorage("org", "repo", issues);
+                var check = sut.CheckInStorage("org", "repo", issues);
                 Assert.AreEqual(issues.Count, numKeys);
             }
         }
@@ -164,7 +164,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var cleanedIssues = await sut.CheckInStorage("org", "repo", issues);
+                var cleanedIssues = sut.CheckInStorage("org", "repo", issues);
             }
         }
 
@@ -182,7 +182,7 @@ namespace AspNetDevNews.Test
 
                 var sut = mock.Create<IssueReceiveService>();
 
-                var cleanedIssues = await sut.CheckInStorage("org", "repo", issues);
+                var cleanedIssues = sut.CheckInStorage("org", "repo", issues);
                 Assert.IsNotNull(cleanedIssues);
                 Assert.AreEqual(0, cleanedIssues.Count);
             }

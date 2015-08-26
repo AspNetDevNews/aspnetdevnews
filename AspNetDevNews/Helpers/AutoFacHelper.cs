@@ -24,7 +24,6 @@ namespace AspNetDevNews.Helpers
 
             builder.RegisterType<IssueReceiveService>();
 
-            //builder.RegisterType<TodayWriter>().As<IDateWriter>();
             builder.RegisterType<GitHubService>();
 
             return builder.Build();
