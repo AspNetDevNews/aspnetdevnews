@@ -15,15 +15,17 @@ namespace AspNetDevNews.Services.AzureTableStorage
     public class AzureTableStorageService: IStorageService
     {
         private ISettingsService Settings { get; set; }
+        public string Error { get; set; }
 
         public AzureTableStorageService(ISettingsService settings) {
             if (settings == null)
-                throw new ArgumentNullException( nameof(settings), "settings cannot be null");
+                throw new ArgumentNullException( nameof(settings), "cannot be null");
 
             this.Settings = settings;
         }
 
-        private CloudTableClient GetClient() {
+        #region retrieve Azure Resources
+        private CloudTableClient GetTableClient() {
             StorageCredentials creds = new StorageCredentials(this.Settings.TwittedIssuesATAccountName, 
                 this.Settings.TwittedIssuesATAccountKey);
             CloudStorageAccount account = new CloudStorageAccount(creds, useHttps: true);
@@ -51,10 +53,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
         }
 
 
-        #region get Storage Tables
         private CloudTable GetIssuesTable()
         {
-            CloudTableClient client = GetClient();
+            CloudTableClient client = GetTableClient();
 
             CloudTable table = client.GetTableReference("twittedIssues");
 
@@ -64,7 +65,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         private CloudTable GetLinksTable()
         {
-            CloudTableClient client = GetClient();
+            CloudTableClient client = GetTableClient();
 
             CloudTable table = client.GetTableReference("twittedLinks");
 
@@ -74,7 +75,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         private CloudTable GetExceptionsTable()
         {
-            CloudTableClient client = GetClient();
+            CloudTableClient client = GetTableClient();
 
             CloudTable table = client.GetTableReference("exceptions");
             table.CreateIfNotExists();
@@ -83,7 +84,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         private CloudTable GetExcecutionsTable()
         {
-            CloudTableClient client = GetClient();
+            CloudTableClient client = GetTableClient();
 
             CloudTable table = client.GetTableReference("executions");
             table.CreateIfNotExists();
@@ -92,7 +93,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         private CloudTable GetDocumentsTable()
         {
-            CloudTableClient client = GetClient();
+            CloudTableClient client = GetTableClient();
 
             CloudTable table = client.GetTableReference("twittedGitHubDocuments");
             table.CreateIfNotExists();
@@ -104,95 +105,31 @@ namespace AspNetDevNews.Services.AzureTableStorage
         #region insert and update entities
         public async Task Store(IList<TwittedIssue> issues)
         {
-            //if (issues == null || issues.Count == 0)
-            //    return;
-
-            //try
-            //{
-            //    var table = GetIssuesTable();
-            //    TableBatchOperation batchOperation = new TableBatchOperation();
-
-            //    foreach (var issue in issues)
-            //    {
-            //        var twittedIssue = AutoMapper.Mapper.Map<TwittedIssueEntity>(issue);
-            //        batchOperation.Insert(twittedIssue);
-
-            //    }
-            //    if (batchOperation.Count() > 0)
-            //        await table.ExecuteBatchAsync(batchOperation);
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex);
-            //}
-            await Store<TwittedIssue, IssueEntity>(issues);
+            await Store<TwittedIssue, IssueEntity>(issues, GetIssuesTable());
         }
 
         public async Task Store(IList<TwittedPost> posts)
         {
-            //if (posts == null || posts.Count == 0)
-            //    return;
-
-            //try
-            //{
-            //    var table = GetLinksTable();
-            //    TableBatchOperation batchOperation = new TableBatchOperation();
-
-            //    foreach (var post in posts)
-            //    {
-            //        var twittedIssue = AutoMapper.Mapper.Map<TwittedLinkEntity>(post);
-            //        batchOperation.Insert(twittedIssue);
-            //    }
-            //    if (batchOperation.Count() > 0)
-            //    {
-            //        var result = await table.ExecuteBatchAsync(batchOperation);
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex);
-            //}
-            await Store<TwittedPost, LinkEntity>(posts);
+            await Store<TwittedPost, LinkEntity>(posts, GetLinksTable());
         }
 
         public async Task Store(IList<TwittedGitHubHostedDocument> documents)
         {
-            //if (documents == null || documents.Count == 0)
-            //    return;
-
-            //try
-            //{
-            //    var table = GetDocumentsTable();
-            //    TableBatchOperation batchOperation = new TableBatchOperation();
-
-            //    foreach (var document in documents)
-            //    {
-            //        var twittedIssue = AutoMapper.Mapper.Map<TwittedGitHubHostedDocumentEntity>(document);
-            //        batchOperation.Insert(twittedIssue);
-            //    }
-            //    if (batchOperation.Count() > 0)
-            //    {
-            //        var result = await table.ExecuteBatchAsync(batchOperation);
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex);
-            //}
-
-            await Store<TwittedGitHubHostedDocument, GitHubHostedDocumentEntity>(documents);
+            await Store<TwittedGitHubHostedDocument, GitHubHostedDocumentEntity>(documents, GetDocumentsTable());
         }
 
         public enum OperationType { Insert, Replace, Merge};
 
-        private async Task Store<Source, Destination>(IList<Source> documents, OperationType operationType = OperationType.Insert) where Destination: ITableEntity
+        protected virtual async Task Store<Source, Destination>(IList<Source> documents, CloudTable destinationTable, OperationType operationType = OperationType.Insert) 
+            where Destination: ITableEntity
         {
             if (documents == null || documents.Count == 0)
                 return;
+            if (destinationTable == null )
+                throw new ArgumentNullException( nameof(destinationTable), "cannot be null");
 
             try
             {
-                var table = GetDocumentsTable();
                 TableBatchOperation batchOperation = new TableBatchOperation();
 
                 foreach (var document in documents)
@@ -210,124 +147,31 @@ namespace AspNetDevNews.Services.AzureTableStorage
                             break;
                     }
                 }
-                if (batchOperation.Count() > 0)
-                {
-                    var result = await table.ExecuteBatchAsync(batchOperation);
-                }
+                var result = await destinationTable.ExecuteBatchAsync(batchOperation);
             }
             catch (Exception exc)
             {
-                Console.WriteLine(exc);
+                Console.Error.WriteLine(exc.Message);
+                Error = exc.Message;
             }
         }
 
         public async Task Merge(IList<Issue> issues)
         {
-            //if (issues == null || issues.Count == 0)
-            //    return;
-
-            //try
-            //{
-            //    var table = GetIssuesTable();
-            //    TableBatchOperation batchOperation = new TableBatchOperation();
-
-            //    foreach (var issue in issues)
-            //    {
-            //        var twittedIssue = AutoMapper.Mapper.Map<IssueMergeEntity>(issue);
-            //        batchOperation.Merge(twittedIssue);
-            //    }
-            //    if (batchOperation.Count() > 0)
-            //    {
-            //        var result = await table.ExecuteBatchAsync(batchOperation);
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex);
-            //}
-            await Store<Issue, IssueMergeEntity>(issues, OperationType.Merge);
+            await Store<Issue, IssueMergeEntity>(issues, GetIssuesTable(), OperationType.Merge);
         }
 
         #endregion
 
-        //public async Task Store(Exception exception, Issue issue, string operation)
-        //{
-        //    if (exception == null )
-        //        return;
-        //    if (string.IsNullOrWhiteSpace(operation))
-        //        return;
-
-        //    try
-        //    {
-        //        var table = GetExceptionsTable();
-
-        //        var storeException = new ExceptionEntity(operation, DateTime.Now.GetRowKey());
-        //        storeException.TwitRowKey = issue.GetRowKey();
-        //        storeException.TwitPartitionKey = issue.GetPartitionKey();
-        //        storeException.CreatedAt = DateTime.Now;
-        //        storeException.Exception = JsonConvert.SerializeObject(exception);
-        //        storeException.Operation = operation;
-
-        //        TableOperation insertOperation = TableOperation.Insert(storeException);
-        //        var result = await table.ExecuteAsync(insertOperation);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex);
-        //    }
-        //}
-
-        //public async Task Store(Exception exception, GitHubHostedDocument document, string operation)
-        //{
-        //    if (exception == null)
-        //        return;
-        //    if (string.IsNullOrWhiteSpace(operation))
-        //        return;
-
-        //    try
-        //    {
-        //        var table = GetExceptionsTable();
-
-        //        var storeException = new ExceptionEntity(operation, DateTime.Now.GetRowKey());
-        //        storeException.TwitRowKey = document.GetRowKey();
-        //        storeException.TwitPartitionKey = document.GetPartitionKey();
-        //        storeException.CreatedAt = DateTime.Now;
-        //        storeException.Exception = JsonConvert.SerializeObject(exception);
-        //        storeException.Operation = operation;
-
-        //        TableOperation insertOperation = TableOperation.Insert(storeException);
-        //        var result = await table.ExecuteAsync(insertOperation);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex);
-        //    }
-        //}
-
-        //public async Task Store(Exception exception, FeedItem post, string operation)
-        //{
-        //    try
-        //    {
-        //        var table = GetExceptionsTable();
-
-        //        var storeException = new ExceptionEntity(operation, DateTime.Now.GetRowKey());
-        //        storeException.TwitRowKey = TableStorageUtilities.EncodeToKey(post.Id);
-        //        storeException.TwitPartitionKey = TableStorageUtilities.EncodeToKey(post.Feed);
-        //        storeException.CreatedAt = DateTime.Now;
-        //        storeException.Exception = JsonConvert.SerializeObject(exception);
-        //        storeException.Operation = operation;
-
-        //        TableOperation insertOperation = TableOperation.Insert(storeException);
-        //        var result = await table.ExecuteAsync(insertOperation);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex);
-        //    }
-        //}
-
         public async Task Store(Exception exception, Interfaces.ITableStorageKeyGet record, string operation)
         {
+            if (exception == null)
+                return;
+            if (record == null)
+                return;
+            if (string.IsNullOrWhiteSpace(operation))
+                return;
+
             try
             {
                 var table = GetExceptionsTable();
@@ -344,10 +188,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
             catch (Exception exc)
             {
-                Console.WriteLine(exc);
+                Console.Error.WriteLine(exc.Message);
             }
         }
-
 
         public async Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int updatedIssues, int postedLinks)
         {
@@ -369,7 +212,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
             catch (Exception exc)
             {
-                Console.WriteLine(exc);
+                Console.Error.WriteLine(exc.Message);
             }
         }
 
@@ -434,6 +277,12 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         public IList<Issue> GetBatchIssues(string organization, string repository, IList<string> rowKeys)
         {
+            if (string.IsNullOrWhiteSpace(organization))
+                return new List<Issue>();
+            if (string.IsNullOrWhiteSpace(repository))
+                return new List<Issue>();
+            if (rowKeys == null || rowKeys.Count == 0)
+                return new List<Issue>();
             try
             {
                 var table = GetIssuesTable();
@@ -471,13 +320,20 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
             catch (Exception exc)
             {
-                Console.WriteLine(exc);
+                Console.Error.WriteLine(exc.Message);
                 return new List<Models.Issue>();
             }
         }
 
         public IList<GitHubHostedDocument> GetBatchDocuments(string organization, string repository, IList<string> rowKeys)
         {
+            if (string.IsNullOrWhiteSpace(organization))
+                return new List<GitHubHostedDocument>();
+            if (string.IsNullOrWhiteSpace(repository))
+                return new List<GitHubHostedDocument>();
+            if (rowKeys == null || rowKeys.Count == 0)
+                return new List<GitHubHostedDocument>();
+
             try
             {
                 var table = GetDocumentsTable();
@@ -516,13 +372,21 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
             catch (Exception exc)
             {
-                Console.WriteLine(exc);
+                Console.Error.WriteLine(exc.Message);
                 return new List<Models.GitHubHostedDocument>();
             }
         }
 
-        private IList<Destination> ExecuteQuery<StorageEntity, Destination>(CloudTable table, string partitionKey, IList<string>rowKeys) where StorageEntity : TableEntity, new ()
+        protected virtual IList<Destination> ExecuteQuery<StorageEntity, Destination>(CloudTable table, string partitionKey, IList<string>rowKeys) 
+            where StorageEntity : TableEntity, new ()
         {
+            if (table == null)
+                throw new ArgumentNullException(nameof(table), "cannot be null");
+            if (string.IsNullOrWhiteSpace(partitionKey))
+                throw new ArgumentNullException(nameof(partitionKey), "cannot be null");
+            if (rowKeys == null || rowKeys.Count == 0)
+                throw new ArgumentNullException(nameof(rowKeys), "cannot be null");
+
             TableQuery<StorageEntity> query = new TableQuery<StorageEntity>().Where(
                 TableStorageUtilities.GetTableQuerySetString(partitionKey, rowKeys));
 
@@ -540,6 +404,11 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
         public IList<FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys)
         {
+            if (string.IsNullOrWhiteSpace(feed))
+                return new List<FeedItem>();
+            if (rowKeys == null || rowKeys.Count == 0)
+                return new List<FeedItem>();
+
             try
             {
                 var table = GetLinksTable();
@@ -565,7 +434,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
             catch (Exception exc)
             {
-                Console.WriteLine(exc);
+                Console.Error.WriteLine(exc.Message);
                 return new List<Models.FeedItem>();
             }
         }

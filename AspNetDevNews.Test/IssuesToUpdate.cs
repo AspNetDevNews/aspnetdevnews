@@ -26,7 +26,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task IfGitHubIssuesListIsNullReturnEmptyList()
+        public void IfGitHubIssuesListIsNullReturnEmptyList()
         {
             using (var mock = AutoMock.GetLoose()) {
 
@@ -40,7 +40,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task IfStorageIssuesListIsNullReturnEmptyList()
+        public void IfStorageIssuesListIsNullReturnEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -54,7 +54,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task IfHaveDifferentKeysReturnEmptyList()
+        public void IfHaveDifferentKeysReturnEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -73,7 +73,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task IfSameIssueAndDifferentTitleTheGitHubIssueIsReported()
+        public void IfSameIssueAndDifferentTitleTheGitHubIssueIsReported()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -94,7 +94,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod,TestCategory("IssuesToUpdate")]
-        public async Task IfSameIssueAndDifferentUpdateTheGitHubIssueIsReported()
+        public void IfSameIssueAndDifferentUpdateTheGitHubIssueIsReported()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -115,7 +115,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task IfSameIssueAndDifferentStateTheGitHubIssueIsReported()
+        public void IfSameIssueAndDifferentStateTheGitHubIssueIsReported()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -135,7 +135,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task IfSameIssueAndDifferentCommentsTheGitHubIssueIsReported()
+        public void IfSameIssueAndDifferentCommentsTheGitHubIssueIsReported()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -155,7 +155,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task IfIssuesAreEqualNothinIsReported()
+        public void IfIssuesAreEqualNothinIsReported()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -175,7 +175,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("IssuesToUpdate")]
-        public async Task OtherFieldsAreIgnored()
+        public void OtherFieldsAreIgnored()
         {
             using (var mock = AutoMock.GetLoose())
             {

@@ -178,6 +178,7 @@
     <Compile Include="Services\Feeds\FeedReaderService.cs" />
     <Compile Include="Services\Interfaces\IHasTweetInfo.cs" />
     <Compile Include="Services\Interfaces\IIsTweetable.cs" />
+    <Compile Include="Services\Interfaces\IJobService.cs" />
     <Compile Include="Services\Interfaces\ISessionLogger.cs" />
     <Compile Include="Services\Interfaces\ITableStorageKeyGet.cs" />
     <Compile Include="Services\GitHubService.cs" />
@@ -186,6 +187,7 @@
     <Compile Include="Services\IssueReceiveService.cs" />
     <Compile Include="Services\Interfaces\IGitHubService.cs" />
     <Compile Include="Services\Interfaces\ISettingsService.cs" />
+    <Compile Include="Services\JobService.cs" />
     <Compile Include="Services\SessionLogService.cs" />
     <Compile Include="Services\SettingsService.cs" />
     <Compile Include="Services\TwitterService.cs" />

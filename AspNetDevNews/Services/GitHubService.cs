@@ -13,13 +13,12 @@ namespace AspNetDevNews.Services
         private ISettingsService Settings { get; set; }
         private ISessionLogger Logger { get; set; }
 
-        // Used by AutoFac
         public GitHubService(ISettingsService settings, ISessionLogger logger)
         {
             if (settings == null)
-                throw new ArgumentNullException(nameof(settings), "settings cannot be null");
+                throw new ArgumentNullException(nameof(settings), "cannot be null");
             if (logger == null)
-                throw new ArgumentNullException(nameof(logger), "logger cannot be null");
+                throw new ArgumentNullException(nameof(logger), "cannot be null");
 
             this.Settings = settings;
             this.Logger = logger;
@@ -36,7 +35,7 @@ namespace AspNetDevNews.Services
         public async Task<IEnumerable<string>> Repositories(string organization)
         {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException(nameof(organization), "settings cannot be null or empty");
+                throw new ArgumentNullException(nameof(organization), "cannot be null or empty");
 
             var repositoriesNames = new List<string>();
             var client = GetClient();
@@ -50,9 +49,9 @@ namespace AspNetDevNews.Services
         public async Task<IEnumerable<Models.Issue>> GetRecentIssues(string organization, string repository, DateTimeOffset since)
         {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException(nameof(repository), "repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "must be specified");
 
             var client = GetClient();
             var request = new Octokit.RepositoryIssueRequest();
@@ -82,12 +81,16 @@ namespace AspNetDevNews.Services
                 return issuesToProcess;
             }
             catch (Exception exc) {
-                this.Logger.AddMessage("GetRecentIssues", "exception " + exc.Message + " while reading recent Issues", organization + " " + repository, MessageType.Error);
+                this.Logger.AddMessage("GetRecentIssues", $"exception {exc.Message} while reading recent Issues", organization + " " + repository, MessageType.Error);
                 return new List<Models.Issue>();
             }
         }
 
         public async Task<IList<GitHubHostedDocument>> ExtractCommitDocuments(string organization, string repository) {
+            if (string.IsNullOrWhiteSpace(organization))
+                throw new ArgumentNullException(nameof(organization), "must be specified");
+            if (string.IsNullOrWhiteSpace(repository))
+                throw new ArgumentNullException(nameof(repository), "must be specified");
 
             var client = GetClient();
             var documents = new List<GitHubHostedDocument>();

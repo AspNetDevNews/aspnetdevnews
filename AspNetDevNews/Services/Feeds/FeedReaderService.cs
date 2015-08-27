@@ -19,9 +19,9 @@ namespace AspNetDevNews.Services.Feeds
 
         public FeedReaderService(ISettingsService settings, ISessionLogger logger) {
             if (settings == null)
-                throw new ArgumentNullException(nameof(settings), "Settings cannot be null");
+                throw new ArgumentNullException(nameof(settings), "cannot be null");
             if (logger == null)
-                throw new ArgumentNullException(nameof(logger), "logger cannot be null");
+                throw new ArgumentNullException(nameof(logger), "cannot be null");
 
             Settings = settings;
             Logger = logger;
@@ -29,6 +29,9 @@ namespace AspNetDevNews.Services.Feeds
 
         public async Task<IList<FeedItem>> ReadFeed(string feedUrl)
         {
+            if (string.IsNullOrWhiteSpace(feedUrl))
+                return new List<FeedItem>();
+
             SyndicationFeed feed = await DownloadFeed(feedUrl);
 
             List<FeedItem> result = new List<FeedItem>();
@@ -42,7 +45,7 @@ namespace AspNetDevNews.Services.Feeds
                         result.Add(mioItem);
                 }
                 catch (Exception exc) {
-                    this.Logger.AddMessage("ReadFeed", "exception " + exc.Message + " while posting To Twitter", feedUrl, MessageType.Error);
+                    this.Logger.AddMessage("ReadFeed", $"exception {exc.Message} while posting To Twitter", feedUrl, MessageType.Error);
                     var test = exc.Message;
                 }
             }
@@ -50,29 +53,11 @@ namespace AspNetDevNews.Services.Feeds
             return result;
         }
 
-
-        //private async Task DownloadFeeds()
-        //{
-        //    var rss = new SyndicationFeed(config.AppSettings["title"], config.AppSettings["description"], null);
-
-        //    foreach (var key in config.AppSettings.AllKeys.Where(key => key.StartsWith("feed:")))
-        //    {
-        //        SyndicationFeed feed = await DownloadFeed(config.AppSettings[key]);
-        //        rss.Items = rss.Items.Union(feed.Items).GroupBy(i => i.Title.Text).Select(i => i.First()).OrderByDescending(i => i.PublishDate.Date);
-        //    }
-
-        //    using (XmlWriter writer = XmlWriter.Create(_masterFile))
-        //        rss.SaveAsRss20(writer);
-
-        //    using (XmlWriter writer = XmlWriter.Create(_feedFile))
-        //    {
-        //        rss.Items = rss.Items.Take(10);
-        //        rss.SaveAsRss20(writer);
-        //    }
-        //}
-
         private async Task<SyndicationFeed> DownloadFeed(string url)
         {
+            if (string.IsNullOrWhiteSpace(url))
+                return new SyndicationFeed();
+
             try
             {
                 using (WebClient client = new WebClient())
@@ -85,20 +70,10 @@ namespace AspNetDevNews.Services.Feeds
             }
             catch (Exception exc)
             {
-                this.Logger.AddMessage("DownloadFeed", "exception " + exc.Message + " while downloading Feed", url, MessageType.Error);
+                this.Logger.AddMessage("DownloadFeed", $"exception {exc.Message} while downloading Feed", url, MessageType.Error);
                 return new SyndicationFeed();
             }
         }
-
-        //public IEnumerable<SyndicationItem> GetData()
-        //{
-        //    using (XmlReader reader = XmlReader.Create(_masterFile))
-        //    {
-        //        var count = int.Parse(config.AppSettings["postsPerPage"]);
-        //        var items = SyndicationFeed.Load(reader).Items.Skip((_page - 1) * count).Take(count);
-        //        return items.Select(item => { CleanItem(item); return item; });
-        //    }
-        //}
 
         //private static void CleanItem(SyndicationItem item)
         //{

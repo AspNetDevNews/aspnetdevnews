@@ -15,27 +15,26 @@ namespace AspNetDevNews.Services
         private ITwitterService TwitterService { get; set; }
         private IFeedReaderService FeedReaderService { get; set; }
         private ISessionLogger LoggerService { get; set; }
+        private IJobService JobService { get; set; }
 
-
-        // remove it
-        public IssueReceiveService()
-        {
-        }
 
         public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, 
-            ITwitterService twitterService, IFeedReaderService feedReaderService, ISessionLogger loggerService) {
+            ITwitterService twitterService, IFeedReaderService feedReaderService, ISessionLogger loggerService,
+            IJobService jobService) {
             if (gitHubService == null)
-                throw new ArgumentNullException(nameof(gitHubService), "gitHubService cannot be null");
+                throw new ArgumentNullException(nameof(gitHubService), "cannot be null");
             if (storageService == null)
-                throw new ArgumentNullException(nameof(storageService), "storageService cannot be null");
+                throw new ArgumentNullException(nameof(storageService), "cannot be null");
             if (settingsService == null)
-                throw new ArgumentNullException(nameof(settingsService), "settingsService cannot be null");
+                throw new ArgumentNullException(nameof(settingsService), "cannot be null");
             if (twitterService == null)
-                throw new ArgumentNullException(nameof(twitterService), "twitterService cannot be null");
+                throw new ArgumentNullException(nameof(twitterService), "cannot be null");
             if (feedReaderService == null)
-                throw new ArgumentNullException(nameof(feedReaderService), "feedReaderService cannot be null");
+                throw new ArgumentNullException(nameof(feedReaderService), "cannot be null");
             if (loggerService == null)
-                throw new ArgumentNullException(nameof(loggerService), "loggerService cannot be null");
+                throw new ArgumentNullException(nameof(loggerService), "cannot be null");
+            if (jobService == null)
+                throw new ArgumentNullException(nameof(jobService), "cannot be null");
 
             this.GitHubService = gitHubService;
             this.StorageService = storageService;
@@ -43,14 +42,7 @@ namespace AspNetDevNews.Services
             this.TwitterService = twitterService;
             this.FeedReaderService = feedReaderService;
             this.LoggerService = loggerService;
-        }
-
-        public IEnumerable<string> Organizations {
-            get { return new List<string> { "aspnet", "nuget" }; }
-        }
-
-        public IEnumerable<string> Feeds {
-            get { return new List<string> { "http://webdevblogs.azurewebsites.net/master.xml" }; }
+            this.JobService = jobService;
         }
 
         public IList<Issue> IssuesToUpdate(IList<Issue> issues, IList<Issue> lastStored)
@@ -107,24 +99,9 @@ namespace AspNetDevNews.Services
             return toUpdate; 
         }
 
-        public IList<GitHubRepo> DocsRepo {
-            get {
-                List<GitHubRepo> repos = new List<GitHubRepo>();
-                repos.Add(new GitHubRepo { Organization = "aspnet", Repository = "Docs" });
-                repos.Add(new GitHubRepo { Organization = "aspnet", Repository = "EntityFramework.Docs" });
-                repos.Add(new GitHubRepo { Organization = "dotnet", Repository = "core-docs" });
-                return repos;
-            }
-        }
-
-        public IList<string> Labels
-        {
-            get { return new List<string> { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs", "up-for-grabs", "help wanted", "feedback-requested" }; }
-        }
-
         public async Task<IEnumerable<string>> Repositories( string organization)  {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "must be specified");
 
             return await this.GitHubService.Repositories(organization);
         }
@@ -133,29 +110,30 @@ namespace AspNetDevNews.Services
         public async Task<IList<Issue>> RecentGitHubIssues(string organization, string repository)
         {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException(nameof(repository), "repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "must be specified");
 
             try
             {
                 List<Models.Issue> issuesToProcess = new List<Models.Issue>();
                 var recentIssues = await this.GitHubService.GetRecentIssues(organization, repository, this.SettingsService.Since);
+                var labels = this.JobService.Labels;
                 foreach (var issue in recentIssues)
                 {
-                    foreach (var refLabel in Labels)
+                    foreach (var refLabel in labels)
                     {
                         if (issue.Labels.Contains(refLabel))
                             issuesToProcess.Add(issue);
                     }
                 }
                 this.LoggerService.AddMessage("RecentGitHubIssues", 
-                    "found " + issuesToProcess.Count + " issues", string.Empty, MessageType.Info);
+                    $"found {issuesToProcess.Count} issues", string.Empty, MessageType.Info);
                 return issuesToProcess;
             }
             catch (Exception exc)
             {
-                this.LoggerService.AddMessage("RecentGitHubIssues", "exception " + exc.Message + " while receiving issues", string.Empty, MessageType.Error);
+                this.LoggerService.AddMessage("RecentGitHubIssues", $"exception {exc.Message} while receiving issues", string.Empty, MessageType.Error);
                 await this.StorageService.Store(exc, null, "RecentIssues");
                 return new List<Models.Issue>();
             }
@@ -168,7 +146,7 @@ namespace AspNetDevNews.Services
             var feedItems = await this.FeedReaderService.ReadFeed(feedUrl);
 
             this.LoggerService.AddMessage("RecentPosts",
-                "found " + feedItems.Count + " posts", string.Empty, MessageType.Info);
+                $"found {feedItems.Count} posts", string.Empty, MessageType.Info);
 
             return feedItems;
         }
@@ -176,14 +154,14 @@ namespace AspNetDevNews.Services
         public async Task<IList<GitHubHostedDocument>> RecentGitHubDocuments(string organization, string repository)
         {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException(nameof(repository), "repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "must be specified");
 
             var documents = await this.GitHubService.ExtractCommitDocuments(organization, repository);
 
             this.LoggerService.AddMessage("RecentGitHubDocuments",
-                "found " + documents.Count + " documents", string.Empty, MessageType.Info);
+                $"found {documents.Count} documents", string.Empty, MessageType.Info);
 
             return documents;
         }
@@ -193,9 +171,9 @@ namespace AspNetDevNews.Services
         public IList<Issue> CheckInStorage(string organization, string repository, IList<Issue> issuesToCheck)
         {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException(nameof(repository), "repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "must be specified");
             if (issuesToCheck == null || issuesToCheck.Count == 0)
                 return new List<Models.Issue>();
 
@@ -213,7 +191,7 @@ namespace AspNetDevNews.Services
             }
             catch (Exception exc)
             {
-                this.LoggerService.AddMessage("CheckInStorage", "exception " + exc.Message + " while reading from storage", string.Empty, MessageType.Error);
+                this.LoggerService.AddMessage("CheckInStorage", $"exception {exc.Message} while reading from storage", string.Empty, MessageType.Error);
                 return new List<Models.Issue>();
             }
 
@@ -245,27 +223,13 @@ namespace AspNetDevNews.Services
 
             try
             {
-
                 var issuesFound = this.StorageService.GetBatchIssues(organization, repository, RowKeysToScan);
 
                 return RemoveStoredItems(issues, issuesFound);
-
-                //foreach (var issue in issues)
-                //{
-                //    bool inArchive = false;
-                //    foreach (var issueFound in issuesFound)
-                //    {
-                //        if (issue.GetPartitionKey() == issueFound.GetPartitionKey() && issue.GetRowKey() == issueFound.GetRowKey())
-                //            inArchive = true;
-                //    }
-                //    if (!inArchive)
-                //        result.Add(issue);
-                //}
-                //return result;
             }
             catch (Exception exc)
             {
-                this.LoggerService.AddMessage("RemoveExisting", "exception " + exc.Message + " while receiving issues", "Issue", MessageType.Error);
+                this.LoggerService.AddMessage("RemoveExisting", $"exception {exc.Message} while receiving issues", "Issue", MessageType.Error);
                 return new List<Models.Issue>();
             }
 
@@ -292,23 +256,10 @@ namespace AspNetDevNews.Services
                 var issuesFound = this.StorageService.GetBatchWebLinks(partitionKey, RowKeysToScan);
 
                 return RemoveStoredItems(issues, issuesFound);
-
-                //foreach (var issue in issues)
-                //{
-                //    bool inArchive = false;
-                //    foreach (var issueFound in issuesFound)
-                //    {
-                //        if (issue.Id == issueFound.Id)
-                //            inArchive = true;
-                //    }
-                //    if (!inArchive)
-                //        result.Add(issue);
-                //}
-                //return result;
             }
             catch (Exception exc)
             {
-                this.LoggerService.AddMessage("RemoveExisting", "exception " + exc.Message + " while receiving issues", "FeedItem", MessageType.Error);
+                this.LoggerService.AddMessage("RemoveExisting", $"exception {exc.Message} while receiving issues", "FeedItem", MessageType.Error);
                 return new List<FeedItem>();
             }
 
@@ -336,22 +287,10 @@ namespace AspNetDevNews.Services
                 var issuesFound = this.StorageService.GetBatchDocuments(organization, repository, RowKeysToScan);
 
                 return RemoveStoredItems(issues, issuesFound);
-                //foreach (var issue in issues)
-                //{
-                //    bool inArchive = false;
-                //    foreach (var issueFound in issuesFound)
-                //    {
-                //        if (issue.GetRowKey() == issueFound.GetRowKey())
-                //            inArchive = true;
-                //    }
-                //    if (!inArchive)
-                //        result.Add(issue);
-                //}
-                //return result;
             }
             catch (Exception exc)
             {
-                this.LoggerService.AddMessage("RemoveExisting", "exception " + exc.Message + " while receiving issues", "GitHubHostedDocument", MessageType.Error);
+                this.LoggerService.AddMessage("RemoveExisting", $"exception {exc.Message} while receiving issues", "GitHubHostedDocument", MessageType.Error);
                 return new List<GitHubHostedDocument>();
             }
 
@@ -359,6 +298,11 @@ namespace AspNetDevNews.Services
 
         private IList<T> RemoveStoredItems<T>(IList<T> incomingElements, IList<T> storedElements) where T : ITableStorageKeyGet
         {
+            if (incomingElements == null || incomingElements.Count == 0)
+                throw new ArgumentNullException(nameof(incomingElements), "cannot be null or empty");
+            if (storedElements == null )
+                throw new ArgumentNullException(nameof(storedElements), "cannot be null");
+
             var result = new List<T>();
             foreach (var issue in incomingElements)
             {
@@ -427,9 +371,9 @@ namespace AspNetDevNews.Services
 
         public async Task<int> ProcessRepository(string organization, string repository) {
             if (string.IsNullOrWhiteSpace(organization))
-                throw new ArgumentNullException(nameof(organization), "organization must be specified");
+                throw new ArgumentNullException(nameof(organization), "must be specified");
             if (string.IsNullOrWhiteSpace(repository))
-                throw new ArgumentNullException(nameof(repository), "repository must be specified");
+                throw new ArgumentNullException(nameof(repository), "must be specified");
 
             // get recent created or modified issues
             var issues = await RecentGitHubIssues(organization, repository);

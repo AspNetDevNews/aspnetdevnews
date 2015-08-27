@@ -7,11 +7,10 @@ using System.Linq;
 using System.Threading.Tasks;
 
 // use autofac to resolve TwitterContext, to make sendIssues routine testable, get tables in azure storage to make store testable
-// Extract Labels, Organizations, Feeds, DocsRepos from IssueReceiver and move in a separate service
 
 // azuretablestorage: store methods, checks that ExecuteBatchAsync isn't called  if list is empty
-// more parameters validation in azurestorageservice
 // public IList<FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys), test per controllare l'encoding dei dati che passa all'executequery
+// tests for formatting of the tweet contents
 
 
 namespace AspNetDevNews
@@ -54,6 +53,7 @@ namespace AspNetDevNews
 
             var ghService = Container.Resolve<IssueReceiveService>();
             var logger = Container.Resolve<ISessionLogger>();
+            var jobService = Container.Resolve<IJobService>();
 
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;
@@ -62,7 +62,7 @@ namespace AspNetDevNews
             int postedLink = 0;
 
             logger.StartSession();
-            var docRepos = ghService.DocsRepo;
+            var docRepos = jobService.DocsRepo;
             foreach (var repo in docRepos) {
                 logger.AddMessage("docRepos", "scanning", repo.Organization + " " + repo.Repository, MessageType.Info);  
 
@@ -77,7 +77,7 @@ namespace AspNetDevNews
             }
 
             // web posts processing
-            foreach (var feed in ghService.Feeds)
+            foreach (var feed in jobService.Feeds)
             {
                 logger.AddMessage("feeds", "scanning", feed, MessageType.Info);
 
@@ -93,7 +93,7 @@ namespace AspNetDevNews
             }
 
             // github repositories processing
-            foreach (var organization in ghService.Organizations) {
+            foreach (var organization in jobService.Organizations) {
                 var repositories = await ghService.Repositories(organization);
                 checkedRepositories += repositories.Count();
                 foreach (var repository in repositories) {

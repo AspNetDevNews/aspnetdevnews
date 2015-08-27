@@ -25,6 +25,7 @@ namespace AspNetDevNews.Helpers
             Mapper.CreateMap<Models.Issue, IssueMergeEntity>()
                 .ForMember(dest => dest.PartitionKey, opts => opts.MapFrom(src => src.GetPartitionKey()))
                 .ForMember(dest => dest.RowKey, opts => opts.MapFrom(src => src.GetRowKey()))
+                .ForMember(dest => dest.UpdatedAt, opts => opts.MapFrom(src => src.UpdatedAt))
                 .ForMember(dest => dest.ETag, opts => opts.MapFrom(src => "*"));
 
             Mapper.CreateMap<Models.TwittedPost, LinkEntity>()

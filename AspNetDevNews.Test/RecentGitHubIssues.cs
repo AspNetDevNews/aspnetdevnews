@@ -60,9 +60,9 @@ namespace AspNetDevNews.Test
         {
             using (var mock = AutoMock.GetLoose())
             {
-                var serviceForLabels = new IssueReceiveService();
+                string[] labels = { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs", "up-for-grabs", "help wanted", "feedback-requested" };
 
-                foreach (var label in serviceForLabels.Labels)
+                foreach (var label in labels)
                 {
                     var recentIssues = new List<Issue>();
                     recentIssues.Add(new Issue { Labels = new[] { label } });
@@ -144,10 +144,8 @@ namespace AspNetDevNews.Test
         {
             using (var mock = AutoMock.GetLoose())
             {
-
-                var serviceForLabels = new IssueReceiveService();
-
-                foreach (var label in serviceForLabels.Labels)
+                string []labels = { "Announcement", "Breaking Change", "Feedback Wanted", "Up for Grabs", "up-for-grabs", "help wanted", "feedback-requested" };
+                foreach (var label in labels)
                 {
                     var recentIssues = new List<Issue>();
                     recentIssues.Add(new Issue { Title = "Ok", Labels = new[] { label } });

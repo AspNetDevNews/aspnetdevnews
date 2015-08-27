@@ -24,7 +24,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, ExpectedException(typeof(ArgumentNullException)), TestCategory("CheckInStorage")]
-        public async Task IfOrganizationIsNullRaisesAnException()
+        public void IfOrganizationIsNullRaisesAnException()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -37,7 +37,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, ExpectedException(typeof(ArgumentNullException)), TestCategory("CheckInStorage")]
-        public async Task IfOrganizationIsEmptyRaisesAnException()
+        public void IfOrganizationIsEmptyRaisesAnException()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -49,7 +49,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, ExpectedException(typeof(ArgumentNullException)), TestCategory("CheckInStorage")]
-        public async Task IfRepositoryIsEmptyRaisesAnException() {
+        public void IfRepositoryIsEmptyRaisesAnException() {
             using (var mock = AutoMock.GetLoose())
             {
                 var sut = mock.Create<IssueReceiveService>();
@@ -61,7 +61,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, ExpectedException(typeof(ArgumentNullException)), TestCategory("CheckInStorage")]
-        public async Task IfRepositoryIsNullRaisesAnException()
+        public void IfRepositoryIsNullRaisesAnException()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -74,7 +74,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("CheckInStorage")]
-        public async Task IfIssuesListIsNullReturnEmptyList()
+        public void IfIssuesListIsNullReturnEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -89,7 +89,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("CheckInStorage")]
-        public async Task IfIssuesListIsEmptyReturnEmptyList()
+        public void IfIssuesListIsEmptyReturnEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -104,7 +104,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("CheckInStorage")]
-        public async Task IfTheListIsEmptyAnEmptyListIsReturned()
+        public void IfTheListIsEmptyAnEmptyListIsReturned()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -132,7 +132,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("CheckInStorage")]
-        public async Task AllTheKeysInTheListAreSearchedInTheStorage()
+        public void AllTheKeysInTheListAreSearchedInTheStorage()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -154,7 +154,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, ExpectedException(typeof(ApplicationException)), TestCategory("CheckInStorage")]
-        public async Task IfFromRepositoriesDifferentFromParametersRaisesAnException()
+        public void IfFromRepositoriesDifferentFromParametersRaisesAnException()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -169,7 +169,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("CheckInStorage")]
-        public async Task IfFailsInGetReturnsEmptyList()
+        public void IfFailsInGetReturnsEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {

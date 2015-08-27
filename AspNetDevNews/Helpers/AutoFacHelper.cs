@@ -3,11 +3,6 @@ using AspNetDevNews.Services.AzureTableStorage;
 using AspNetDevNews.Services.Feeds;
 using AspNetDevNews.Services.Interfaces;
 using Autofac;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AspNetDevNews.Helpers
 {
@@ -21,12 +16,13 @@ namespace AspNetDevNews.Helpers
             builder.RegisterType<AzureTableStorageService>().As<IStorageService>();
             builder.RegisterType<TwitterService>().As<ITwitterService>();
             builder.RegisterType<FeedReaderService>().As<IFeedReaderService>();
+            builder.RegisterType<JobService>().As<IJobService>();
             builder.RegisterType<SessionLogService>().As<ISessionLogger>().SingleInstance();
 
             builder.RegisterType<IssueReceiveService>();
-
             builder.RegisterType<GitHubService>();
-
+            //builder.RegisterType<JobService>();
+            
             return builder.Build();
         }
     }

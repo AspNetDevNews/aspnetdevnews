@@ -17,7 +17,7 @@ namespace AspNetDevNews.Test
     public class RemoveExistingFeeds
     {
         [TestMethod, TestCategory("RemoveExistingFeeds")]
-        public async Task IfListIsNullReturnEmptyList()
+        public void IfListIsNullReturnEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -32,7 +32,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingFeeds")]
-        public async Task IfFailsInGetReturnsEmptyList()
+        public void IfFailsInGetReturnsEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -51,7 +51,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingFeeds")]
-        public async Task AllTheKeysInTheListAreRequested() {
+        public void AllTheKeysInTheListAreRequested() {
             using (var mock = AutoMock.GetLoose())
             {
                 var issues = new List<FeedItem>();
@@ -72,7 +72,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, ExpectedException(typeof(ApplicationException)), TestCategory("RemoveExistingFeeds")]
-        public async Task IfFromDifferentFeedsRaisesAnException()
+        public void IfFromDifferentFeedsRaisesAnException()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -87,7 +87,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingFeeds")]
-        public async Task IfThePostAlreadyInStorageIsRemovedFromList()
+        public void IfThePostAlreadyInStorageIsRemovedFromList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -113,7 +113,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingFeeds")]
-        public async Task IfThePostIsNotInStorageIsManteinedInList()
+        public void IfThePostIsNotInStorageIsManteinedInList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -139,7 +139,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingFeeds")]
-        public async Task IfTheListIsEmptyAnEmptyListIsReturned()
+        public void IfTheListIsEmptyAnEmptyListIsReturned()
         {
             using (var mock = AutoMock.GetLoose())
             {

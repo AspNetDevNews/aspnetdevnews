@@ -17,7 +17,7 @@ namespace AspNetDevNews.Test
     public class RemoveExistingIssues
     {
         [TestMethod, TestCategory("RemoveExistingIssues")]
-        public async Task IfListIsNullReturnEmptyList()
+        public void IfListIsNullReturnEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -33,7 +33,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingIssues")]
-        public async Task IfFailsInGetReturnsEmptyList()
+        public void IfFailsInGetReturnsEmptyList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -53,7 +53,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingIssues")]
-        public async Task AllTheKeysInTheListAreRequested() {
+        public void AllTheKeysInTheListAreRequested() {
             using (var mock = AutoMock.GetLoose())
             {
                 var issues = new List<Issue>();
@@ -74,7 +74,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, ExpectedException(typeof(ApplicationException)), TestCategory("RemoveExistingIssues")]
-        public async Task IfFromDifferentRepositoriesRaisesAnException()
+        public void IfFromDifferentRepositoriesRaisesAnException()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -88,7 +88,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingIssues")]
-        public async Task IfTheIssuesAlreadyInStorageIsRemovedFromList()
+        public void IfTheIssuesAlreadyInStorageIsRemovedFromList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -117,7 +117,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingIssues")]
-        public async Task IfTheIssuesIsNotInStorageIsManteinedInList()
+        public void IfTheIssuesIsNotInStorageIsManteinedInList()
         {
             using (var mock = AutoMock.GetLoose())
             {
@@ -145,7 +145,7 @@ namespace AspNetDevNews.Test
         }
 
         [TestMethod, TestCategory("RemoveExistingIssues")]
-        public async Task IfTheListIsEmptyAnEmptyListIsReturned()
+        public void IfTheListIsEmptyAnEmptyListIsReturned()
         {
             using (var mock = AutoMock.GetLoose())
             {
