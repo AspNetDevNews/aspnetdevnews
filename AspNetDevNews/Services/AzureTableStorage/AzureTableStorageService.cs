@@ -19,6 +19,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
         public AzureTableStorageService(ISettingsService settings) {
             if (settings == null)
                 throw new ArgumentNullException( nameof(settings), "settings cannot be null");
+
             this.Settings = settings;
         }
 
@@ -43,7 +44,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
         private CloudBlobContainer GetLogContainer() {
             CloudBlobClient client = GetBlobClient();
 
-            CloudBlobContainer container = client.GetContainerReference("sessionLog");
+            CloudBlobContainer container = client.GetContainerReference("sessionlog");
 
             container.CreateIfNotExists();
             return container;
@@ -124,7 +125,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             //{
             //    Console.WriteLine(ex);
             //}
-            await Store<TwittedIssue, TwittedIssueEntity>(issues);
+            await Store<TwittedIssue, IssueEntity>(issues);
         }
 
         public async Task Store(IList<TwittedPost> posts)
@@ -151,7 +152,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             //{
             //    Console.WriteLine(ex);
             //}
-            await Store<TwittedPost, TwittedLinkEntity>(posts);
+            await Store<TwittedPost, LinkEntity>(posts);
         }
 
         public async Task Store(IList<TwittedGitHubHostedDocument> documents)
@@ -179,10 +180,12 @@ namespace AspNetDevNews.Services.AzureTableStorage
             //    Console.WriteLine(ex);
             //}
 
-            await Store<TwittedGitHubHostedDocument, TwittedGitHubHostedDocumentEntity>(documents);
+            await Store<TwittedGitHubHostedDocument, GitHubHostedDocumentEntity>(documents);
         }
 
-        private async Task Store<Source, Destination>(IList<Source> documents) where Destination: ITableEntity
+        public enum OperationType { Insert, Replace, Merge};
+
+        private async Task Store<Source, Destination>(IList<Source> documents, OperationType operationType = OperationType.Insert) where Destination: ITableEntity
         {
             if (documents == null || documents.Count == 0)
                 return;
@@ -195,16 +198,26 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 foreach (var document in documents)
                 {
                     var twittedIssue = AutoMapper.Mapper.Map<Destination>(document);
-                    batchOperation.InsertOrMerge(twittedIssue);
+                    switch (operationType) {
+                        case OperationType.Insert:
+                            batchOperation.Insert(twittedIssue);
+                            break;
+                        case OperationType.Replace:
+                            batchOperation.Replace(twittedIssue);
+                            break;
+                        case OperationType.Merge:
+                            batchOperation.Merge(twittedIssue);
+                            break;
+                    }
                 }
                 if (batchOperation.Count() > 0)
                 {
                     var result = await table.ExecuteBatchAsync(batchOperation);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(exc);
             }
         }
 
@@ -232,7 +245,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
             //{
             //    Console.WriteLine(ex);
             //}
-            await Store<Issue, IssueMergeEntity>(issues);
+            await Store<Issue, IssueMergeEntity>(issues, OperationType.Merge);
         }
 
         #endregion
@@ -329,9 +342,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 TableOperation insertOperation = TableOperation.Insert(storeException);
                 var result = await table.ExecuteAsync(insertOperation);
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(exc);
             }
         }
 
@@ -354,9 +367,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 TableOperation insertOperation = TableOperation.Insert(Report);
                 var result = await table.ExecuteAsync(insertOperation);
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(exc);
             }
         }
 
@@ -365,13 +378,13 @@ namespace AspNetDevNews.Services.AzureTableStorage
             {
                 var table = GetIssuesTable();
 
-                TableOperation retrieveOperation = TableOperation.Retrieve<TwittedIssueEntity>(issue.GetPartitionKey(), issue.GetRowKey());
+                TableOperation retrieveOperation = TableOperation.Retrieve<IssueEntity>(issue.GetPartitionKey(), issue.GetRowKey());
 
                 TableResult query = await table.ExecuteAsync(retrieveOperation);
 
                 if (query.Result != null)
                 {
-                    Console.WriteLine("Product: {0}", ((TwittedIssueEntity)query.Result).Title);
+                    Console.WriteLine("Product: {0}", ((IssueEntity)query.Result).Title);
                     return true;
                 }
                 else
@@ -428,7 +441,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 dummy.Organization = organization;
                 dummy.Repository = repository;
 
-                return ExecuteQuery<TwittedIssueEntity, Issue>(table, dummy.GetPartitionKey(), rowKeys);
+                return ExecuteQuery<IssueEntity, Issue>(table, dummy.GetPartitionKey(), rowKeys);
 
                 ////string filter = "(PartitionKey eq '" + dummy.GetPartitionKey() + "') and (";
                 ////string rowFilter = string.Empty;
@@ -456,9 +469,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 //}
                 //return results;
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(exc);
                 return new List<Models.Issue>();
             }
         }
@@ -485,7 +498,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 //TableQuery<TwittedGitHubHostedDocumentEntity> query = new TableQuery<TwittedGitHubHostedDocumentEntity>().Where(filter);
 
-                return ExecuteQuery<TwittedGitHubHostedDocumentEntity, GitHubHostedDocument>(table, dummy.GetPartitionKey(), rowKeys);
+                return ExecuteQuery<GitHubHostedDocumentEntity, GitHubHostedDocument>(table, dummy.GetPartitionKey(), rowKeys);
 
                 //TableQuery<TwittedGitHubHostedDocumentEntity> query = new TableQuery<TwittedGitHubHostedDocumentEntity>().Where(
                 //    TableStorageUtilities.GetTableQuerySetString(dummy.GetPartitionKey(), rowKeys));
@@ -501,9 +514,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 //}
                 //return results;
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(exc);
                 return new List<Models.GitHubHostedDocument>();
             }
         }
@@ -536,7 +549,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     realKeys.Add(TableStorageUtilities.EncodeToKey(rowKeys[i]));
                 feed = TableStorageUtilities.EncodeToKey(feed);
 
-                return ExecuteQuery<TwittedLinkEntity, FeedItem>(table, feed, realKeys);
+                return ExecuteQuery<LinkEntity, FeedItem>(table, feed, realKeys);
 
                 //TableQuery<TwittedLinkEntity> query = new TableQuery<TwittedLinkEntity>().Where(
                 //    TableStorageUtilities.GetTableQuerySetString(feed, realKeys));
@@ -550,9 +563,9 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 //}
                 //return results;
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(exc);
                 return new List<Models.FeedItem>();
             }
         }
@@ -568,7 +581,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 var partitionKey = dummy.GetPartitionKey();
 
-                var recentIssuesQuery = (from entry in table.CreateQuery<TwittedIssueEntity>()
+                var recentIssuesQuery = (from entry in table.CreateQuery<IssueEntity>()
                     where entry.PartitionKey == partitionKey && entry.CreatedAt > since.DateTime
                                               select entry);
                 // using async method raises an exception
@@ -578,7 +591,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
 
                 if (recentIssues.Any())
                 {
-                    foreach (TwittedIssueEntity entity in recentIssues)
+                    foreach (IssueEntity entity in recentIssues)
                     {
                         var issue = AutoMapper.Mapper.Map<Issue>(entity);
 
@@ -599,10 +612,11 @@ namespace AspNetDevNews.Services.AzureTableStorage
             }
         }
 
-        public Task StoreSessionLog(string content) {
+        public void StoreSessionLog(string content) {
             CloudBlobContainer container = GetLogContainer();
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(DateTime.Now.ToLongDateString());
-            return null;
+            string blobName = DateTime.Now.ToLongDateString() + " " + DateTime.Now.ToLongTimeString();
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(blobName);
+            blockBlob.UploadText(content);
         }
 
     }

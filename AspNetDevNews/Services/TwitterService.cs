@@ -1,28 +1,30 @@
 ﻿using AspNetDevNews.Models;
 using AspNetDevNews.Services.Interfaces;
-using AspNetDevNews.Services.AzureTableStorage;
 using LinqToTwitter;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services
 {
     public class TwitterService: ITwitterService
     {
-        public TwitterService(ISettingsService settings, IStorageService storage) {
+        public TwitterService(ISettingsService settings, IStorageService storage, ISessionLogger logger) {
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings), "Settings cannot be null");
             if (storage == null)
                 throw new ArgumentNullException(nameof(storage), "Storage cannot be null");
+            if (logger == null)
+                throw new ArgumentNullException(nameof(logger), "logger cannot be null");
 
             this.Settings = settings;
             this.Storage = storage;
+            this.Logger = logger;
         }
 
         private ISettingsService Settings { get; set; } 
         private IStorageService Storage { get; set; }
+        private ISessionLogger Logger { get; set; }
 
         public async Task<IList<TwittedIssue>> Send(IList<Models.Issue> issues) {
             return await Send<TwittedIssue, Issue>(issues, "SendIssues");
@@ -155,10 +157,7 @@ namespace AspNetDevNews.Services
             //}
         }
 
-        private async Task<IList<TwittedType>> Send<TwittedType, ContentType>(IList<ContentType> docs, string operation) 
-            where ContentType : ITableStorageKeyGet, IIsTweetable
-            where TwittedType : IHasTweetInfo
-        {
+        public TwitterContext GetTwitterContext() {
             var authorizer = new SingleUserAuthorizer
             {
                 CredentialStore = new SingleUserInMemoryCredentialStore
@@ -169,7 +168,14 @@ namespace AspNetDevNews.Services
                     AccessTokenSecret = this.Settings.TwitterAccessTokenSecret
                 }
             };
-            using (var twitterCtx = new TwitterContext(authorizer))
+            return new TwitterContext(authorizer);
+        }
+
+        private async Task<IList<TwittedType>> Send<TwittedType, ContentType>(IList<ContentType> docs, string operation) 
+            where ContentType : ITableStorageKeyGet, IIsTweetable
+            where TwittedType : IHasTweetInfo
+        {
+            using (var twitterCtx = GetTwitterContext())
             {
                 List<TwittedType> twittedIssues = new List<TwittedType>();
                 List<string> twittedMessages = new List<string>();
@@ -181,7 +187,7 @@ namespace AspNetDevNews.Services
                         var message = document.GetTwitterText();
                         if (twittedMessages.Contains(message))
                             continue;
-                        var tweet = await twitterCtx.TweetAsync(document.GetTwitterText());
+                        var tweet = await twitterCtx.TweetAsync(message);
 
                         var twittedIssue = AutoMapper.Mapper.Map<TwittedType>(document);
                         twittedIssue.StatusID = tweet.StatusID;
@@ -192,6 +198,8 @@ namespace AspNetDevNews.Services
                     }
                     catch (Exception exc)
                     {
+                        this.Logger.AddMessage("Send", "exception " + exc.Message + " while posting To Twitter", operation, MessageType.Error);
+
                         await Storage.Store(exc, document, operation);
                     }
                 }

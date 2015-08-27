@@ -18,13 +18,17 @@ namespace AspNetDevNews.Services
         }
         public void AddMessage(string operation, string message, string data, MessageType type)
         {
-            string row = DateTime.Now.ToLongDateString() + " - " + type + " - " + operation + " -> " + message + " : " + data;
+            if (Content == null)
+                Content = new StringBuilder();
+
+            string row = DateTime.Now.ToLongDateString() + $" {DateTime.Now.ToLongTimeString()} - {type} - {operation} -> {message} : " + data;
             Content.AppendLine(row);
         }
 
-        public Task EndSession()
+        public void EndSession()
         {
-            throw new NotImplementedException();
+            this.Storage.StoreSessionLog(Content.ToString());
+            Content = new StringBuilder();
         }
 
         public void StartSession()

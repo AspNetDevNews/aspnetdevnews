@@ -27,5 +27,6 @@ namespace AspNetDevNews.Services.Interfaces
         IList<Models.Issue> GetBatchIssues(string organization, string repository, IList<string> rowKeys);
         IList<Models.FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys);
         IList<Models.GitHubHostedDocument> GetBatchDocuments(string organization, string repository, IList<string> rowKeys);
+        void StoreSessionLog(string content);
     }
 }

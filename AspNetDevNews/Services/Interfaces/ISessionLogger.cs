@@ -13,6 +13,6 @@ namespace AspNetDevNews.Services.Interfaces
 
         void StartSession();
         void AddMessage(string operation, string message, string data, MessageType type);
-        Task EndSession();
+        void EndSession();
     }
 }

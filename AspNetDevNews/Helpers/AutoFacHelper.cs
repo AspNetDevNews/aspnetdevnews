@@ -21,6 +21,7 @@ namespace AspNetDevNews.Helpers
             builder.RegisterType<AzureTableStorageService>().As<IStorageService>();
             builder.RegisterType<TwitterService>().As<ITwitterService>();
             builder.RegisterType<FeedReaderService>().As<IFeedReaderService>();
+            builder.RegisterType<SessionLogService>().As<ISessionLogger>().SingleInstance();
 
             builder.RegisterType<IssueReceiveService>();
 

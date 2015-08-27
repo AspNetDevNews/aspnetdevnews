@@ -15,7 +15,7 @@ namespace AspNetDevNews.Helpers
             // Source, Desc
 
             // OK
-            Mapper.CreateMap<Models.TwittedIssue, TwittedIssueEntity>()
+            Mapper.CreateMap<Models.TwittedIssue, IssueEntity>()
                 .ForMember(dest => dest.PartitionKey, opts => opts.MapFrom(src => src.GetPartitionKey()))
                 .ForMember(dest => dest.RowKey, opts => opts.MapFrom(src => src.GetRowKey()))
                 .ForMember(dest => dest.Labels, opts => opts.MapFrom(src => string.Join(";", src.Labels)))
@@ -27,18 +27,18 @@ namespace AspNetDevNews.Helpers
                 .ForMember(dest => dest.RowKey, opts => opts.MapFrom(src => src.GetRowKey()))
                 .ForMember(dest => dest.ETag, opts => opts.MapFrom(src => "*"));
 
-            Mapper.CreateMap<Models.TwittedPost, TwittedLinkEntity>()
+            Mapper.CreateMap<Models.TwittedPost, LinkEntity>()
                 .ForMember(dest => dest.PartitionKey, opts => opts.MapFrom(src => TableStorageUtilities.EncodeToKey(src.Feed)))
                 .ForMember(dest => dest.RowKey, opts => opts.MapFrom(src => TableStorageUtilities.EncodeToKey(src.Id)));
 
             // OK
-            Mapper.CreateMap<TwittedIssueEntity, Models.Issue>()
+            Mapper.CreateMap<IssueEntity, Models.Issue>()
                 .ForMember(dest => dest.Labels, opts => opts.MapFrom(src => src.Labels.Split(new char[] { ';' })))
                 .ForMember(dest => dest.Number, opts => opts.MapFrom(src => Convert.ToInt32(src.RowKey)))
                 .ForMember(dest => dest.Organization, opts => opts.MapFrom(src => src.PartitionKey.Split(new char[] { '+' })[0]))
                 .ForMember(dest => dest.Repository, opts => opts.MapFrom(src => src.PartitionKey.Split(new char[] { '+' })[1]));
             // OK
-            Mapper.CreateMap<TwittedLinkEntity, Models.FeedItem>()
+            Mapper.CreateMap<LinkEntity, Models.FeedItem>()
                 .ForMember(dest => dest.Id, opts => opts.MapFrom(src => TableStorageUtilities.DecodeFromKey(src.RowKey)))
                 .ForMember(dest => dest.Feed, opts => opts.MapFrom(src => TableStorageUtilities.DecodeFromKey(src.PartitionKey)));
             //OK
@@ -62,11 +62,11 @@ namespace AspNetDevNews.Helpers
             Mapper.CreateMap<Models.GitHubHostedDocument, Models.TwittedGitHubHostedDocument>();
 
             // OK
-            Mapper.CreateMap<TwittedGitHubHostedDocumentEntity, Models.GitHubHostedDocument>()
+            Mapper.CreateMap<GitHubHostedDocumentEntity, Models.GitHubHostedDocument>()
                 .ForMember(dest => dest.Organization, opts => opts.MapFrom(src => src.PartitionKey.Split(new char[] { '+' })[0]))
                 .ForMember(dest => dest.Repository, opts => opts.MapFrom(src => src.PartitionKey.Split(new char[] { '+' })[1]));
 
-            Mapper.CreateMap<Models.TwittedGitHubHostedDocument, TwittedGitHubHostedDocumentEntity>()
+            Mapper.CreateMap<Models.TwittedGitHubHostedDocument, GitHubHostedDocumentEntity>()
                 .ForMember(dest => dest.PartitionKey, opts => opts.MapFrom(src => src.GetPartitionKey()))
                 .ForMember(dest => dest.RowKey, opts => opts.MapFrom(src => src.GetRowKey()))
                 .ForMember(dest => dest.TsCommit, opts => opts.MapFrom(src => src.TsCommit.DateTime))

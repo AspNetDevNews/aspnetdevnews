@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services.AzureTableStorage
 {
-    public class TwittedLinkEntity: TableEntity
+    public class LinkEntity: TableEntity
     {
-        public TwittedLinkEntity(string feed, string id)
+        public LinkEntity(string feed, string id)
             : base(feed, id)
         { }
 
-        public TwittedLinkEntity() { }
+        public LinkEntity() { }
 
         public DateTime PublishDate { get; set; }
         public string Title { get; set; }

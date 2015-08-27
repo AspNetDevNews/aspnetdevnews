@@ -1,5 +1,4 @@
 ﻿using AspNetDevNews.Helpers;
-using AspNetDevNews.Models;
 using AspNetDevNews.Services;
 using AspNetDevNews.Services.Interfaces;
 using Autofac;
@@ -8,15 +7,12 @@ using System.Linq;
 using System.Threading.Tasks;
 
 // use autofac to resolve TwitterContext, to make sendIssues routine testable, get tables in azure storage to make store testable
-// add logger as instance and store everything in a blob
-// OK --> store exception, use ITableEntity as parameter so I can use the same routine
-// OK --> publish and store method use the same name
 // Extract Labels, Organizations, Feeds, DocsRepos from IssueReceiver and move in a separate service
 
 // azuretablestorage: store methods, checks that ExecuteBatchAsync isn't called  if list is empty
 // more parameters validation in azurestorageservice
 // public IList<FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys), test per controllare l'encoding dei dati che passa all'executequery
- 
+
 
 namespace AspNetDevNews
 {
@@ -57,6 +53,7 @@ namespace AspNetDevNews
             Container = AutoFacHelper.InitAutoFac();
 
             var ghService = Container.Resolve<IssueReceiveService>();
+            var logger = Container.Resolve<ISessionLogger>();
 
             DateTime dtInizio = DateTime.Now;
             int twitted = 0;
@@ -64,8 +61,11 @@ namespace AspNetDevNews
             int updated = 0;
             int postedLink = 0;
 
+            logger.StartSession();
             var docRepos = ghService.DocsRepo;
-            foreach (var repo in docRepos) { 
+            foreach (var repo in docRepos) {
+                logger.AddMessage("docRepos", "scanning", repo.Organization + " " + repo.Repository, MessageType.Info);  
+
                 // documents update processing
 //                var documents = await ghService.RecentGitHubDocuments("aspnet", "Docs");
                 var documents = await ghService.RecentGitHubDocuments(repo.Organization, repo.Repository);
@@ -79,6 +79,8 @@ namespace AspNetDevNews
             // web posts processing
             foreach (var feed in ghService.Feeds)
             {
+                logger.AddMessage("feeds", "scanning", feed, MessageType.Info);
+
                 // get recent posts
                 var links = await ghService.RecentPosts(feed);
                 // check for posts already in archive and remove from the list
@@ -95,6 +97,8 @@ namespace AspNetDevNews
                 var repositories = await ghService.Repositories(organization);
                 checkedRepositories += repositories.Count();
                 foreach (var repository in repositories) {
+                    logger.AddMessage("repository", "scanning", organization + " " + repository, MessageType.Info);
+
                     // get recent created or modified issues
                     var gitHubIssues = await ghService.RecentGitHubIssues(organization, repository);
                     // if no issues are reported from github, go next repository
@@ -121,6 +125,7 @@ namespace AspNetDevNews
             DateTime dtFine = DateTime.Now;
             var stgService = Container.Resolve<IStorageService>();
             await stgService.ReportExecution(dtInizio, dtFine, twitted, checkedRepositories, updated, postedLink);
+            logger.EndSession();
         }
 
     }

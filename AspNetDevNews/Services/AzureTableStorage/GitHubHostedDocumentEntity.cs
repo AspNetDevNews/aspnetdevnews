@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services.AzureTableStorage
 {
-    public class TwittedGitHubHostedDocumentEntity : TableEntity
+    public class GitHubHostedDocumentEntity : TableEntity
     {
-        public TwittedGitHubHostedDocumentEntity(string orgRepo, string commitDocument)
+        public GitHubHostedDocumentEntity(string orgRepo, string commitDocument)
             : base(orgRepo, commitDocument)
         { }
 
-        public TwittedGitHubHostedDocumentEntity() { }
+        public GitHubHostedDocumentEntity() { }
 
         public string FileName { get; set; }
         public string Status { get; set; }

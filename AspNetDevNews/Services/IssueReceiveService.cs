@@ -14,6 +14,7 @@ namespace AspNetDevNews.Services
         private ISettingsService SettingsService { get; set; }
         private ITwitterService TwitterService { get; set; }
         private IFeedReaderService FeedReaderService { get; set; }
+        private ISessionLogger LoggerService { get; set; }
 
 
         // remove it
@@ -22,7 +23,7 @@ namespace AspNetDevNews.Services
         }
 
         public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, 
-            ITwitterService twitterService, IFeedReaderService feedReaderService ) {
+            ITwitterService twitterService, IFeedReaderService feedReaderService, ISessionLogger loggerService) {
             if (gitHubService == null)
                 throw new ArgumentNullException(nameof(gitHubService), "gitHubService cannot be null");
             if (storageService == null)
@@ -33,12 +34,15 @@ namespace AspNetDevNews.Services
                 throw new ArgumentNullException(nameof(twitterService), "twitterService cannot be null");
             if (feedReaderService == null)
                 throw new ArgumentNullException(nameof(feedReaderService), "feedReaderService cannot be null");
+            if (loggerService == null)
+                throw new ArgumentNullException(nameof(loggerService), "loggerService cannot be null");
 
             this.GitHubService = gitHubService;
             this.StorageService = storageService;
             this.SettingsService = settingsService;
             this.TwitterService = twitterService;
             this.FeedReaderService = feedReaderService;
+            this.LoggerService = loggerService;
         }
 
         public IEnumerable<string> Organizations {
@@ -62,14 +66,30 @@ namespace AspNetDevNews.Services
                     if (stgIssue.GetPartitionKey() == githubIssue.GetPartitionKey() && stgIssue.GetRowKey() == githubIssue.GetRowKey()) {
                         bool updated = false;
 
-                        if (stgIssue.Title != githubIssue.Title) 
+                        if (stgIssue.Title != githubIssue.Title) {
+                            this.LoggerService.AddMessage("IssuesToUpdate", 
+                                $"update in property Title of issue {stgIssue.Organization} {stgIssue.Repository} {stgIssue.Number}", 
+                                $"storage Value : {stgIssue.Title} github value : {githubIssue.Title}", MessageType.Warning);
                             updated = true;
-                        else if (stgIssue.UpdatedAt != githubIssue.UpdatedAt)
+                        }
+                        else if (stgIssue.UpdatedAt != githubIssue.UpdatedAt) {
+                            this.LoggerService.AddMessage("IssuesToUpdate",
+                                $"update in property UpdatedAt of issue {stgIssue.Organization} {stgIssue.Repository} {stgIssue.Number}",
+                                $"storage Value : {stgIssue.UpdatedAt} github value : {githubIssue.UpdatedAt}", MessageType.Warning);
                             updated = true;
-                        else if (stgIssue.State != githubIssue.State)
+                        }
+                        else if (stgIssue.State != githubIssue.State) {
+                            this.LoggerService.AddMessage("IssuesToUpdate",
+                                $"update in property State of issue {stgIssue.Organization} {stgIssue.Repository} {stgIssue.Number}",
+                                $"storage Value : {stgIssue.State} github value : {githubIssue.State}", MessageType.Warning);
                             updated = true;
-                        else if (stgIssue.Comments != githubIssue.Comments)
+                        }
+                        else if (stgIssue.Comments != githubIssue.Comments) {
+                            this.LoggerService.AddMessage("IssuesToUpdate",
+                                $"update in property Comments of issue {stgIssue.Organization} {stgIssue.Repository} {stgIssue.Number}",
+                                $"storage Value : {stgIssue.Comments} github value : {githubIssue.Comments}", MessageType.Warning);
                             updated = true;
+                        }
 
                         //if (stgIssue.Labels != githubIssue.Labels)
                         //{
@@ -129,10 +149,13 @@ namespace AspNetDevNews.Services
                             issuesToProcess.Add(issue);
                     }
                 }
+                this.LoggerService.AddMessage("RecentGitHubIssues", 
+                    "found " + issuesToProcess.Count + " issues", string.Empty, MessageType.Info);
                 return issuesToProcess;
             }
             catch (Exception exc)
             {
+                this.LoggerService.AddMessage("RecentGitHubIssues", "exception " + exc.Message + " while receiving issues", string.Empty, MessageType.Error);
                 await this.StorageService.Store(exc, null, "RecentIssues");
                 return new List<Models.Issue>();
             }
@@ -142,8 +165,12 @@ namespace AspNetDevNews.Services
         {
             if (string.IsNullOrWhiteSpace(feedUrl))
                 return new List<FeedItem>();
+            var feedItems = await this.FeedReaderService.ReadFeed(feedUrl);
 
-            return await this.FeedReaderService.ReadFeed(feedUrl);
+            this.LoggerService.AddMessage("RecentPosts",
+                "found " + feedItems.Count + " posts", string.Empty, MessageType.Info);
+
+            return feedItems;
         }
 
         public async Task<IList<GitHubHostedDocument>> RecentGitHubDocuments(string organization, string repository)
@@ -153,7 +180,12 @@ namespace AspNetDevNews.Services
             if (string.IsNullOrWhiteSpace(repository))
                 throw new ArgumentNullException(nameof(repository), "repository must be specified");
 
-            return await this.GitHubService.ExtractCommitDocuments(organization, repository);
+            var documents = await this.GitHubService.ExtractCommitDocuments(organization, repository);
+
+            this.LoggerService.AddMessage("RecentGitHubDocuments",
+                "found " + documents.Count + " documents", string.Empty, MessageType.Info);
+
+            return documents;
         }
 
         #endregion
@@ -179,8 +211,9 @@ namespace AspNetDevNews.Services
             {
                 return this.StorageService.GetBatchIssues(organization, repository, RowKeysToScan);
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
+                this.LoggerService.AddMessage("CheckInStorage", "exception " + exc.Message + " while reading from storage", string.Empty, MessageType.Error);
                 return new List<Models.Issue>();
             }
 
@@ -230,8 +263,9 @@ namespace AspNetDevNews.Services
                 //}
                 //return result;
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
+                this.LoggerService.AddMessage("RemoveExisting", "exception " + exc.Message + " while receiving issues", "Issue", MessageType.Error);
                 return new List<Models.Issue>();
             }
 
@@ -272,8 +306,9 @@ namespace AspNetDevNews.Services
                 //}
                 //return result;
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
+                this.LoggerService.AddMessage("RemoveExisting", "exception " + exc.Message + " while receiving issues", "FeedItem", MessageType.Error);
                 return new List<FeedItem>();
             }
 
@@ -314,8 +349,9 @@ namespace AspNetDevNews.Services
                 //}
                 //return result;
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
+                this.LoggerService.AddMessage("RemoveExisting", "exception " + exc.Message + " while receiving issues", "GitHubHostedDocument", MessageType.Error);
                 return new List<GitHubHostedDocument>();
             }
 

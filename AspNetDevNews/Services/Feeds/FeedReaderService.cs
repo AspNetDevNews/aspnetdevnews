@@ -15,14 +15,16 @@ namespace AspNetDevNews.Services.Feeds
     public class FeedReaderService: IFeedReaderService
     {
         private ISettingsService Settings { get; set; }
+        private ISessionLogger Logger { get; set; }
 
-        //public FeedReaderService()
-        //{
-        //    Settings = new SettingsService();
-        //}
+        public FeedReaderService(ISettingsService settings, ISessionLogger logger) {
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings), "Settings cannot be null");
+            if (logger == null)
+                throw new ArgumentNullException(nameof(logger), "logger cannot be null");
 
-        public FeedReaderService(ISettingsService settings) {
             Settings = settings;
+            Logger = logger;
         }
 
         public async Task<IList<FeedItem>> ReadFeed(string feedUrl)
@@ -33,19 +35,6 @@ namespace AspNetDevNews.Services.Feeds
             foreach (var item in feed.Items) {
                 try
                 {
-                    // OK
-                    //var mioItem = new FeedItem();
-                    //if (item.Id.ToLower().StartsWith("http"))
-                    //    mioItem.Id = item.Id;
-                    //else if (item.Links.Count > 0)
-                    //    mioItem.Id = item.Links[0].Uri.ToString();
-                    //if (item.PublishDate.Year != 1)
-                    //    mioItem.PublishDate = item.PublishDate.DateTime;
-                    //else
-                    //    mioItem.PublishDate = item.LastUpdatedTime.DateTime;
-                    //mioItem.Summary = item.Summary?.Text;
-                    //mioItem.Title = item.Title.Text;
-                    //mioItem.Feed = feedUrl;
                     var mioItem = AutoMapper.Mapper.Map<FeedItem>(item);
                     mioItem.Feed = feedUrl;
 
@@ -53,6 +42,7 @@ namespace AspNetDevNews.Services.Feeds
                         result.Add(mioItem);
                 }
                 catch (Exception exc) {
+                    this.Logger.AddMessage("ReadFeed", "exception " + exc.Message + " while posting To Twitter", feedUrl, MessageType.Error);
                     var test = exc.Message;
                 }
             }
@@ -93,10 +83,9 @@ namespace AspNetDevNews.Services.Feeds
                     return SyndicationFeed.Load(XmlReader.Create(stream, settings));
                 }
             }
-            catch (Exception ex)
+            catch (Exception exc)
             {
-                
-                Trace.TraceWarning("Feed Collector", "Couldn't download: " + url, ex);
+                this.Logger.AddMessage("DownloadFeed", "exception " + exc.Message + " while downloading Feed", url, MessageType.Error);
                 return new SyndicationFeed();
             }
         }

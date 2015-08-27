@@ -5,21 +5,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AspNetDevNews.Models;
-using AspNetDevNews.Helpers;
-using System.Reflection;
 
 namespace AspNetDevNews.Services
 {
     public class GitHubService : IGitHubService
     {
         private ISettingsService Settings { get; set; }
+        private ISessionLogger Logger { get; set; }
 
         // Used by AutoFac
-        public GitHubService(ISettingsService settings)
+        public GitHubService(ISettingsService settings, ISessionLogger logger)
         {
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings), "settings cannot be null");
+            if (logger == null)
+                throw new ArgumentNullException(nameof(logger), "logger cannot be null");
+
             this.Settings = settings;
+            this.Logger = logger;
         }
 
         private Octokit.GitHubClient GetClient()
@@ -79,6 +82,7 @@ namespace AspNetDevNews.Services
                 return issuesToProcess;
             }
             catch (Exception exc) {
+                this.Logger.AddMessage("GetRecentIssues", "exception " + exc.Message + " while reading recent Issues", organization + " " + repository, MessageType.Error);
                 return new List<Models.Issue>();
             }
         }

@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace AspNetDevNews.Services.AzureTableStorage
 {
-    public class TwittedIssueEntity : TableEntity
+    public class IssueEntity : TableEntity
     {
-        public TwittedIssueEntity(string orgRepository, string issueNumber)
+        public IssueEntity(string orgRepository, string issueNumber)
             : base(orgRepository, issueNumber)
         {
         }
 
-        public TwittedIssueEntity() { }
+        public IssueEntity() { }
 
         public string Title { get; set; }
         public string Url { get; set; }
