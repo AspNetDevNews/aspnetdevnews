@@ -9,6 +9,7 @@ using System.ServiceModel.Syndication;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Text.RegularExpressions;
 
 namespace AspNetDevNews.Services.Feeds
 {
@@ -39,6 +40,7 @@ namespace AspNetDevNews.Services.Feeds
                 try
                 {
                     var mioItem = AutoMapper.Mapper.Map<FeedItem>(item);
+                    mioItem.Summary = Regex.Replace(mioItem.Summary, "<[^>]*>", "");
                     mioItem.Feed = feedUrl;
 
                     if (mioItem.PublishDate > this.Settings.Since)

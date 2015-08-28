@@ -1,4 +1,5 @@
-﻿using AspNetDevNews.Services.Interfaces;
+﻿using AspNetDevNews.Helpers;
+using AspNetDevNews.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,59 +26,6 @@ namespace AspNetDevNews.Models
             return Commit + "+" + FileName.Replace("/", "-");
         }
 
-        private string GetSection() {
-            if (Organization.ToLower() == "aspnet" && Repository.ToLower() == "docs") {
-                if (FileName.ToLower().StartsWith("aspnet/", StringComparison.Ordinal))
-                    return "aspnet";
-                else if (FileName.ToLower().StartsWith("mvc/", StringComparison.Ordinal))
-                    return "mvc";
-                else return string.Empty;
-            } else if (Organization.ToLower() == "aspnet" && Repository.ToLower() == "entityframework.docs") {
-                return "entityframework";
-            }
-            else if (Organization.ToLower() == "dotnet" && Repository.ToLower() == "core-docs")
-            {
-                return "netcore";
-            }
-            else
-                return string.Empty;
-        }
-
-        private string GetDocumentUrl() {
-            string section = GetSection();
-
-            if (!string.IsNullOrWhiteSpace(section))
-            {
-                if (section == "mvc" || section == "aspnet")
-                {
-                    string url = FileName.Substring(section.Length + 1);
-                    url = url.Substring(0, url.Length - 4);
-                    if (section == "aspnet")
-                        url = "http://docs.asp.net/en/latest/" + url;
-                    else if (section == "mvc")
-                        url = "http://docs.asp.net/projects/mvc/en/latest/" + url;
-                    url += ".html";
-
-                    return url;
-                }
-                else {
-                    string url = FileName.Substring("docs/".Length);
-                    url = url.Substring(0, url.Length - 4);
-                    if (section == "entityframework")
-                        url = "http://ef.readthedocs.org/en/latest/" + url;
-                    else if (section == "netcore")
-                        url = "http://dotnet.readthedocs.org/en/latest/" + url;
-                    else
-                        return string.Empty;
-                    url += ".html";
-                    return url;
-                }
-
-            }
-            else
-                return string.Empty;
-        }
-
         private string GetDocumentName() {
             int position = FileName.LastIndexOf("/", StringComparison.Ordinal);
             string documentName = string.Empty;
@@ -90,7 +38,7 @@ namespace AspNetDevNews.Models
         
         public string GetTwitterText()
         {
-            string url = GetDocumentUrl();
+            string url = UrlFormatter.GetWorkingUrl(Organization, Repository, FileName);
             string documentName = GetDocumentName();
             string tweetStatus = string.Empty;
 

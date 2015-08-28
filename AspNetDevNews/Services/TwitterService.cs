@@ -75,6 +75,8 @@ namespace AspNetDevNews.Services
                         if (twittedMessages.Contains(message))
                             continue;
                         var tweet = await twitterCtx.TweetAsync(message);
+                        //var tweet = new Status();
+                        //tweet.StatusID = 11;
 
                         var twittedIssue = AutoMapper.Mapper.Map<TwittedType>(document);
                         twittedIssue.StatusID = tweet.StatusID;

@@ -63,12 +63,14 @@ namespace AspNetDevNews
 
             logger.StartSession();
             var docRepos = jobService.DocsRepo;
-            foreach (var repo in docRepos) {
-                logger.AddMessage("docRepos", "scanning", repo.Organization + " " + repo.Repository, MessageType.Info);  
+
+            foreach (var repo in docRepos)
+            {
+                logger.AddMessage("docRepos", "scanning", repo.Organization + " " + repo.Repository, MessageType.Info);
 
                 // documents update processing
-//                var documents = await ghService.RecentGitHubDocuments("aspnet", "Docs");
                 var documents = await ghService.RecentGitHubDocuments(repo.Organization, repo.Repository);
+
                 documents = ghService.RemoveExisting(documents);
                 // publish the new links
                 var twittedDocs = await ghService.Publish(documents);

@@ -135,6 +135,7 @@
     <Compile Include="RemoveExistingFeeds.cs" />
     <Compile Include="RemoveExistingIssues.cs" />
     <Compile Include="TwitterServiceTests.cs" />
+    <Compile Include="TwitterMessagesTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AspNetDevNews\AspNetDevNews.csproj">

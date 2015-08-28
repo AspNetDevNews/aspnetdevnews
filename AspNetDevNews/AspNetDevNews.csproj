@@ -156,6 +156,7 @@
     <Compile Include="Helpers\AutoMapperHelper.cs" />
     <Compile Include="Helpers\DateTimeHelper.cs" />
     <Compile Include="Helpers\RestHelper.cs" />
+    <Compile Include="Helpers\UrlFormatter.cs" />
     <Compile Include="Models\GitHubHostedDocument.cs" />
     <Compile Include="Models\GitHubRepo.cs" />
     <Compile Include="Models\TwittedGitHubHostedDocument.cs" />

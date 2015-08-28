@@ -138,12 +138,18 @@ namespace AspNetDevNews.Services.AzureTableStorage
                     switch (operationType) {
                         case OperationType.Insert:
                             batchOperation.Insert(twittedIssue);
+                            //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                            //await destinationTable.ExecuteAsync(insertOperation);
                             break;
                         case OperationType.Replace:
                             batchOperation.Replace(twittedIssue);
+                            //TableOperation replaceOperation = TableOperation.Replace(twittedIssue);
+                            //await destinationTable.ExecuteAsync(replaceOperation);
                             break;
                         case OperationType.Merge:
                             batchOperation.Merge(twittedIssue);
+                            //TableOperation mergeOperation = TableOperation.Merge(twittedIssue);
+                            //await destinationTable.ExecuteAsync(mergeOperation);
                             break;
                     }
                 }
