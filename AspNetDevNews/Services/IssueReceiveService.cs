@@ -21,20 +21,20 @@ namespace AspNetDevNews.Services
         public IssueReceiveService(IGitHubService gitHubService, IStorageService storageService, ISettingsService settingsService, 
             ITwitterService twitterService, IFeedReaderService feedReaderService, ISessionLogger loggerService,
             IJobService jobService) {
-            if (gitHubService == null)
-                throw new ArgumentNullException(nameof(gitHubService), "cannot be null");
-            if (storageService == null)
-                throw new ArgumentNullException(nameof(storageService), "cannot be null");
-            if (settingsService == null)
-                throw new ArgumentNullException(nameof(settingsService), "cannot be null");
-            if (twitterService == null)
-                throw new ArgumentNullException(nameof(twitterService), "cannot be null");
-            if (feedReaderService == null)
-                throw new ArgumentNullException(nameof(feedReaderService), "cannot be null");
-            if (loggerService == null)
-                throw new ArgumentNullException(nameof(loggerService), "cannot be null");
-            if (jobService == null)
-                throw new ArgumentNullException(nameof(jobService), "cannot be null");
+                if (gitHubService == null)
+                    throw new ArgumentNullException(nameof(gitHubService), "cannot be null");
+                if (storageService == null)
+                    throw new ArgumentNullException(nameof(storageService), "cannot be null");
+                if (settingsService == null)
+                    throw new ArgumentNullException(nameof(settingsService), "cannot be null");
+                if (twitterService == null)
+                    throw new ArgumentNullException(nameof(twitterService), "cannot be null");
+                if (feedReaderService == null)
+                    throw new ArgumentNullException(nameof(feedReaderService), "cannot be null");
+                if (loggerService == null)
+                    throw new ArgumentNullException(nameof(loggerService), "cannot be null");
+                if (jobService == null)
+                    throw new ArgumentNullException(nameof(jobService), "cannot be null");
 
             this.GitHubService = gitHubService;
             this.StorageService = storageService;
@@ -118,6 +118,7 @@ namespace AspNetDevNews.Services
             {
                 List<Models.Issue> issuesToProcess = new List<Models.Issue>();
                 var recentIssues = await this.GitHubService.GetRecentIssues(organization, repository, this.SettingsService.Since);
+
                 var labels = this.JobService.Labels;
                 foreach (var issue in recentIssues)
                 {
@@ -127,6 +128,8 @@ namespace AspNetDevNews.Services
                             issuesToProcess.Add(issue);
                     }
                 }
+
+
                 this.LoggerService.AddMessage("RecentGitHubIssues", 
                     $"found {issuesToProcess.Count} issues", string.Empty, MessageType.Info);
                 return issuesToProcess;
@@ -159,11 +162,31 @@ namespace AspNetDevNews.Services
                 throw new ArgumentNullException(nameof(repository), "must be specified");
 
             var documents = await this.GitHubService.ExtractCommitDocuments(organization, repository);
+            // check all the documents updated in the last day and if this focument has been updated in the last day is ignored
+            var checkWindow = new DateTimeOffset(DateTime.Now.AddDays(-1));
+            var inLastDay = this.StorageService.GetRecentGitHubDocuments(organization, repository, checkWindow);
+
+            var candidatesToPublish = new List<GitHubHostedDocument>();
+            var docsToPublish = new List<GitHubHostedDocument>();
+            foreach (var doc in documents)
+            {
+                bool addThis = true;
+                foreach (var recentDoc in inLastDay) {
+                    if (recentDoc.FileName == doc.FileName)
+                        addThis = false;
+                }
+                if (addThis)
+                    candidatesToPublish.Add(doc);
+            }
+
+            var groupdedDocs = candidatesToPublish.GroupBy(doc => doc.FileName);
+            foreach (var group in groupdedDocs) 
+                docsToPublish.Add(group.OrderBy(doc => doc.TsCommit).FirstOrDefault());
 
             this.LoggerService.AddMessage("RecentGitHubDocuments",
                 $"found {documents.Count} documents", string.Empty, MessageType.Info);
 
-            return documents;
+            return docsToPublish;
         }
 
         #endregion

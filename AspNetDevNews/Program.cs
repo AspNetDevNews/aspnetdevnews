@@ -34,6 +34,8 @@ namespace AspNetDevNews
             var service = Container.Resolve<IssueReceiveService>();
             var github = Container.Resolve<GitHubService>();
 
+            var storage = Container.Resolve<IStorageService>();
+            storage.GetRecentGitHubDocuments("aspnet", "Docs", new DateTimeOffset(DateTime.Today.AddDays(-1)));
             //var documents = await service.RecentGitHubDocuments("aspnet", "Docs");
 
             //var documents = await github.ExtractCommitDocuments("aspnet", "EntityFramework.Docs", new DateTimeOffset(DateTime.Today.AddMonths(-4)));

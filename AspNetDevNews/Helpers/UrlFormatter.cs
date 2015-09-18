@@ -63,6 +63,16 @@ namespace AspNetDevNews.Helpers
                     Marker = string.Empty
                 });
 
+                layouts.Add(new DocumentTypeLayout
+                {
+                    Sezione = "webhooks",
+                    Heading = "webhooks/",
+                    Organization = "aspnet",
+                    Repository = "docs",
+                    UrlBase = "http://docs.asp.net/projects/aspnetwebhooks/en/latest/",
+                    Marker = "webhooks/"
+                });
+
             }
         }
 

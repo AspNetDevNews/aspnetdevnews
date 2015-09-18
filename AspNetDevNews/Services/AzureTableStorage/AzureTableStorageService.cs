@@ -18,8 +18,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
         public string Error { get; set; }
 
         public AzureTableStorageService(ISettingsService settings) {
-            if (settings == null)
-                throw new ArgumentNullException( nameof(settings), "cannot be null");
+            //if (settings == null)
+            //    throw new ArgumentNullException( nameof(settings), "cannot be null");
 
             this.Settings = settings;
         }
@@ -125,8 +125,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
         {
             if (documents == null || documents.Count == 0)
                 return;
-            if (destinationTable == null )
-                throw new ArgumentNullException( nameof(destinationTable), "cannot be null");
+            //if (destinationTable == null )
+            //    throw new ArgumentNullException( nameof(destinationTable), "cannot be null");
 
             try
             {
@@ -386,12 +386,12 @@ namespace AspNetDevNews.Services.AzureTableStorage
         protected virtual IList<Destination> ExecuteQuery<StorageEntity, Destination>(CloudTable table, string partitionKey, IList<string>rowKeys) 
             where StorageEntity : TableEntity, new ()
         {
-            if (table == null)
-                throw new ArgumentNullException(nameof(table), "cannot be null");
-            if (string.IsNullOrWhiteSpace(partitionKey))
-                throw new ArgumentNullException(nameof(partitionKey), "cannot be null");
-            if (rowKeys == null || rowKeys.Count == 0)
-                throw new ArgumentNullException(nameof(rowKeys), "cannot be null");
+            //if (table == null)
+            //    throw new ArgumentNullException(nameof(table), "cannot be null");
+            //if (string.IsNullOrWhiteSpace(partitionKey))
+            //    throw new ArgumentNullException(nameof(partitionKey), "cannot be null");
+            //if (rowKeys == null || rowKeys.Count == 0)
+            //    throw new ArgumentNullException(nameof(rowKeys), "cannot be null");
 
             TableQuery<StorageEntity> query = new TableQuery<StorageEntity>().Where(
                 TableStorageUtilities.GetTableQuerySetString(partitionKey, rowKeys));
@@ -486,6 +486,50 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 return new List<Models.Issue>();
             }
         }
+
+        public IList<GitHubHostedDocument> GetRecentGitHubDocuments(string organization, string repository, DateTimeOffset since)
+        {
+            try
+            {
+                var table = GetDocumentsTable();
+                var dummy = new Models.Issue();
+                dummy.Organization = organization;
+                dummy.Repository = repository;
+
+                var partitionKey = dummy.GetPartitionKey();
+
+                var recentIssuesQuery = (from entry in table.CreateQuery<GitHubHostedDocumentEntity>()
+                                         where entry.PartitionKey == partitionKey && entry.TsCommit > since.DateTime
+                                         select entry);
+                // using async method raises an exception
+                var recentIssues = recentIssuesQuery.ToList();
+
+                var results = new List<GitHubHostedDocument>();
+
+                if (recentIssues.Any())
+                {
+                    foreach (GitHubHostedDocumentEntity entity in recentIssues)
+                    {
+                        var issue = AutoMapper.Mapper.Map<GitHubHostedDocument>(entity);
+
+                        results.Add(issue);
+                    }
+                    return results;
+                }
+                else
+                {
+                    Console.WriteLine("No inventory was not found.  Better order more!");
+                    return new List<Models.GitHubHostedDocument>();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return new List<Models.GitHubHostedDocument>();
+            }
+        }
+
 
         public void StoreSessionLog(string content) {
             CloudBlobContainer container = GetLogContainer();

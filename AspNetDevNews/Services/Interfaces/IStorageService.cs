@@ -23,6 +23,7 @@ namespace AspNetDevNews.Services.Interfaces
         Task ReportExecution(DateTime StartedAt, DateTime EndedAt, int TwittedIssues, int CheckedRepositories, int UpdatedIssues, int postedLinks);
         Task<bool> Exists(Models.TwittedIssue issue);
         IList<Models.Issue> GetRecentIssues(string organization, string repository, DateTimeOffset since);
+        IList<Models.GitHubHostedDocument> GetRecentGitHubDocuments(string organization, string repository, DateTimeOffset since);
 
         IList<Models.Issue> GetBatchIssues(string organization, string repository, IList<string> rowKeys);
         IList<Models.FeedItem> GetBatchWebLinks(string feed, IList<string> rowKeys);
