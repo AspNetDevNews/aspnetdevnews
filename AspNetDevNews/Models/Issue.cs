@@ -39,6 +39,8 @@ namespace AspNetDevNews.Models
             string title = this.Title.Trim();
             if (!title.EndsWith(".", StringComparison.Ordinal))
                 title += ".";
+            if (title.Length > 85)
+                title = title.Substring(0, 85);
             return "[" + PlainLabels + "]: " + title + " " + this.Url;
         }
 

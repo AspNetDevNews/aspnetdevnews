@@ -107,22 +107,31 @@ namespace AspNetDevNews.Services
             var head = repo.Commit.Sha;
 
             foreach (var currentCommit in commits) {
-                var compareResult = await client.Repository.Commits.Compare(organization, repository, currentCommit.Sha, head);
-                head = currentCommit.Sha;
+                //var compareResult = await client.Repository.Commits.Compare(organization, repository, currentCommit.Sha, head);
+                //head = currentCommit.Sha;
 
-                foreach (var file in compareResult.Files) {
-                    if (file.Filename.ToLower().EndsWith(".rst", StringComparison.Ordinal)) { 
-                        var fileData = new GitHubHostedDocument();
-                        fileData.Commit = currentCommit.Sha;
-                        fileData.FileName = file.Filename;
-                        fileData.Status = file.Status;
-                        fileData.TsCommit = currentCommit.Commit.Committer.Date;
-                        fileData.Organization = organization;
-                        fileData.Repository = repository;
+                var myCommit = await client.Repository.Commits.Get(organization, repository, currentCommit.Sha);
+                if (myCommit.Files != null) {
+                    Console.WriteLine(myCommit.Files.Count.ToString());
 
-                        documents.Add(fileData);
+                    foreach (var file in myCommit.Files)
+                    {
+                        if (file.Filename.ToLower().EndsWith(".rst", StringComparison.Ordinal))
+                        {
+                            var fileData = new GitHubHostedDocument();
+                            fileData.Commit = currentCommit.Sha;
+                            fileData.FileName = file.Filename;
+                            fileData.Status = file.Status;
+                            fileData.TsCommit = currentCommit.Commit.Committer.Date;
+                            fileData.Organization = organization;
+                            fileData.Repository = repository;
+
+                            documents.Add(fileData);
+                        }
                     }
+
                 }
+
             }
             return documents;
         }

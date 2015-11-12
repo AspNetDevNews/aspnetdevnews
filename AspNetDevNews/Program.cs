@@ -66,19 +66,19 @@ namespace AspNetDevNews
             logger.StartSession();
             var docRepos = jobService.DocsRepo;
 
-            foreach (var repo in docRepos)
-            {
-                logger.AddMessage("docRepos", "scanning", repo.Organization + " " + repo.Repository, MessageType.Info);
+            //foreach (var repo in docRepos)
+            //{
+            //    logger.AddMessage("docRepos", "scanning", repo.Organization + " " + repo.Repository, MessageType.Info);
 
-                // documents update processing
-                var documents = await ghService.RecentGitHubDocuments(repo.Organization, repo.Repository);
+            //    // documents update processing
+            //    var documents = await ghService.RecentGitHubDocuments(repo.Organization, repo.Repository);
 
-                documents = ghService.RemoveExisting(documents);
-                // publish the new links
-                var twittedDocs = await ghService.Publish(documents);
-                // store in the storage the data about the new issues
-                await ghService.Store(twittedDocs);
-            }
+            //    documents = ghService.RemoveExisting(documents);
+            //    // publish the new links
+            //    var twittedDocs = await ghService.Publish(documents);
+            //    // store in the storage the data about the new issues
+            //    await ghService.Store(twittedDocs);
+            //}
 
             // web posts processing
             foreach (var feed in jobService.Feeds)

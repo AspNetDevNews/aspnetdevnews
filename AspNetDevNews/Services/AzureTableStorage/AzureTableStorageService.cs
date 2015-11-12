@@ -18,8 +18,8 @@ namespace AspNetDevNews.Services.AzureTableStorage
         public string Error { get; set; }
 
         public AzureTableStorageService(ISettingsService settings) {
-            //if (settings == null)
-            //    throw new ArgumentNullException( nameof(settings), "cannot be null");
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings), "cannot be null");
 
             this.Settings = settings;
         }
@@ -125,35 +125,52 @@ namespace AspNetDevNews.Services.AzureTableStorage
         {
             if (documents == null || documents.Count == 0)
                 return;
-            //if (destinationTable == null )
-            //    throw new ArgumentNullException( nameof(destinationTable), "cannot be null");
+            if (destinationTable == null)
+                throw new ArgumentNullException(nameof(destinationTable), "cannot be null");
 
             try
             {
-                TableBatchOperation batchOperation = new TableBatchOperation();
+                //TableBatchOperation batchOperation = new TableBatchOperation();
 
                 foreach (var document in documents)
                 {
                     var twittedIssue = AutoMapper.Mapper.Map<Destination>(document);
                     switch (operationType) {
                         case OperationType.Insert:
-                            batchOperation.Insert(twittedIssue);
-                            //TableOperation insertOperation = TableOperation.Insert(twittedIssue);
-                            //await destinationTable.ExecuteAsync(insertOperation);
+                            //batchOperation.Insert(twittedIssue);
+                            TableOperation insertOperation = TableOperation.Insert(twittedIssue);
+                            try
+                            {
+                                await destinationTable.ExecuteAsync(insertOperation);
+                            }
+                            catch (Exception exc) {
+                                var table = GetExceptionsTable();
+
+                                var storeException = new ExceptionEntity("InsertDocument", DateTime.Now.GetRowKey());
+                                storeException.TwitRowKey = twittedIssue.RowKey;
+                                storeException.TwitPartitionKey = twittedIssue.PartitionKey;
+                                storeException.CreatedAt = DateTime.Now;
+                                storeException.Exception = JsonConvert.SerializeObject(exc);
+                                storeException.Operation = "InsertDocument";
+
+                                TableOperation myOperation = TableOperation.Insert(storeException);
+                                var result = await table.ExecuteAsync(myOperation);
+
+                            }
                             break;
                         case OperationType.Replace:
-                            batchOperation.Replace(twittedIssue);
-                            //TableOperation replaceOperation = TableOperation.Replace(twittedIssue);
-                            //await destinationTable.ExecuteAsync(replaceOperation);
+                            //batchOperation.Replace(twittedIssue);
+                            TableOperation replaceOperation = TableOperation.Replace(twittedIssue);
+                            await destinationTable.ExecuteAsync(replaceOperation);
                             break;
                         case OperationType.Merge:
-                            batchOperation.Merge(twittedIssue);
-                            //TableOperation mergeOperation = TableOperation.Merge(twittedIssue);
-                            //await destinationTable.ExecuteAsync(mergeOperation);
+                            //batchOperation.Merge(twittedIssue);
+                            TableOperation mergeOperation = TableOperation.Merge(twittedIssue);
+                            await destinationTable.ExecuteAsync(mergeOperation);
                             break;
                     }
                 }
-                var result = await destinationTable.ExecuteBatchAsync(batchOperation);
+                //var result = await destinationTable.ExecuteBatchAsync(batchOperation);
             }
             catch (Exception exc)
             {
@@ -297,32 +314,6 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 dummy.Repository = repository;
 
                 return ExecuteQuery<IssueEntity, Issue>(table, dummy.GetPartitionKey(), rowKeys);
-
-                ////string filter = "(PartitionKey eq '" + dummy.GetPartitionKey() + "') and (";
-                ////string rowFilter = string.Empty;
-                ////foreach (var chiave in rowKeys) {
-                ////    if (!string.IsNullOrWhiteSpace(rowFilter))
-                ////        rowFilter += " or ";
-
-                ////    rowFilter += " (RowKey eq '" + chiave + "') ";
-                ////}
-                ////filter += rowFilter + ")";
-
-                ////TableQuery<TwittedIssueEntity> query = new TableQuery<TwittedIssueEntity>().Where(filter);
-                //TableQuery<TwittedIssueEntity> query = new TableQuery<TwittedIssueEntity>().Where(
-                //    TableStorageUtilities.GetTableQuerySetString(dummy.GetPartitionKey(), rowKeys));
-
-
-                //var results = new List<Issue>();
-                
-                //var alreadyStored = table.ExecuteQuery(query);
-                //foreach (TwittedIssueEntity entity in alreadyStored)
-                //{
-                //    var issue = AutoMapper.Mapper.Map<Issue>(entity);
-
-                //    results.Add(issue);
-                //}
-                //return results;
             }
             catch (Exception exc)
             {
@@ -347,34 +338,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 dummy.Organization = organization;
                 dummy.Repository = repository;
 
-                //string filter = "(PartitionKey eq '" + partitionKey + "') and (";
-                //string rowFilter = string.Empty;
-                //foreach (var chiave in rowKeys)
-                //{
-                //    if (!string.IsNullOrWhiteSpace(rowFilter))
-                //        rowFilter += " or ";
-
-                //    rowFilter += " (RowKey eq '" + chiave + "') ";
-                //}
-                //filter += rowFilter + ")";
-
-                //TableQuery<TwittedGitHubHostedDocumentEntity> query = new TableQuery<TwittedGitHubHostedDocumentEntity>().Where(filter);
-
                 return ExecuteQuery<GitHubHostedDocumentEntity, GitHubHostedDocument>(table, dummy.GetPartitionKey(), rowKeys);
-
-                //TableQuery<TwittedGitHubHostedDocumentEntity> query = new TableQuery<TwittedGitHubHostedDocumentEntity>().Where(
-                //    TableStorageUtilities.GetTableQuerySetString(dummy.GetPartitionKey(), rowKeys));
-
-                //var results = new List<GitHubHostedDocument>();
-
-                //var alreadyStored = table.ExecuteQuery(query);
-                //foreach (TwittedGitHubHostedDocumentEntity entity in alreadyStored)
-                //{
-                //    var issue = AutoMapper.Mapper.Map<GitHubHostedDocument>(entity);
-
-                //    results.Add(issue);
-                //}
-                //return results;
             }
             catch (Exception exc)
             {
@@ -386,12 +350,12 @@ namespace AspNetDevNews.Services.AzureTableStorage
         protected virtual IList<Destination> ExecuteQuery<StorageEntity, Destination>(CloudTable table, string partitionKey, IList<string>rowKeys) 
             where StorageEntity : TableEntity, new ()
         {
-            //if (table == null)
-            //    throw new ArgumentNullException(nameof(table), "cannot be null");
-            //if (string.IsNullOrWhiteSpace(partitionKey))
-            //    throw new ArgumentNullException(nameof(partitionKey), "cannot be null");
-            //if (rowKeys == null || rowKeys.Count == 0)
-            //    throw new ArgumentNullException(nameof(rowKeys), "cannot be null");
+            if (table == null)
+                throw new ArgumentNullException(nameof(table), "cannot be null");
+            if (string.IsNullOrWhiteSpace(partitionKey))
+                throw new ArgumentNullException(nameof(partitionKey), "cannot be null");
+            if (rowKeys == null || rowKeys.Count == 0)
+                throw new ArgumentNullException(nameof(rowKeys), "cannot be null");
 
             TableQuery<StorageEntity> query = new TableQuery<StorageEntity>().Where(
                 TableStorageUtilities.GetTableQuerySetString(partitionKey, rowKeys));
@@ -425,18 +389,6 @@ namespace AspNetDevNews.Services.AzureTableStorage
                 feed = TableStorageUtilities.EncodeToKey(feed);
 
                 return ExecuteQuery<LinkEntity, FeedItem>(table, feed, realKeys);
-
-                //TableQuery<TwittedLinkEntity> query = new TableQuery<TwittedLinkEntity>().Where(
-                //    TableStorageUtilities.GetTableQuerySetString(feed, realKeys));
-                //var results = new List<FeedItem>();
-
-                //var alreadyStored = table.ExecuteQuery(query);
-                //foreach (TwittedLinkEntity entity in alreadyStored)
-                //{
-                //    var issue = AutoMapper.Mapper.Map<FeedItem>(entity);
-                //    results.Add(issue);
-                //}
-                //return results;
             }
             catch (Exception exc)
             {
@@ -502,7 +454,7 @@ namespace AspNetDevNews.Services.AzureTableStorage
                                          where entry.PartitionKey == partitionKey && entry.TsCommit > since.DateTime
                                          select entry);
                 // using async method raises an exception
-                var recentIssues = recentIssuesQuery.ToList();
+                var recentIssues = recentIssuesQuery.ToList().OrderByDescending( doc => doc.TsCommit);
 
                 var results = new List<GitHubHostedDocument>();
 

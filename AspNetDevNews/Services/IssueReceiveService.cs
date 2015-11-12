@@ -168,7 +168,7 @@ namespace AspNetDevNews.Services
 
             var candidatesToPublish = new List<GitHubHostedDocument>();
             var docsToPublish = new List<GitHubHostedDocument>();
-            foreach (var doc in documents)
+            foreach (var doc in documents.OrderByDescending( doc => doc.TsCommit))
             {
                 bool addThis = true;
                 foreach (var recentDoc in inLastDay) {
@@ -181,10 +181,10 @@ namespace AspNetDevNews.Services
 
             var groupdedDocs = candidatesToPublish.GroupBy(doc => doc.FileName);
             foreach (var group in groupdedDocs) 
-                docsToPublish.Add(group.OrderBy(doc => doc.TsCommit).FirstOrDefault());
+                docsToPublish.Add(group.OrderByDescending(doc => doc.TsCommit).FirstOrDefault());
 
             this.LoggerService.AddMessage("RecentGitHubDocuments",
-                $"found {documents.Count} documents", string.Empty, MessageType.Info);
+                $"found {docsToPublish.Count} documents", string.Empty, MessageType.Info);
 
             return docsToPublish;
         }

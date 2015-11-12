@@ -67,6 +67,8 @@ namespace AspNetDevNews.Services
                 List<TwittedType> twittedIssues = new List<TwittedType>();
                 List<string> twittedMessages = new List<string>();
 
+                this.Logger.AddMessage("SendTweet","documents to tweet: " + docs.Count, string.Empty, MessageType.Info);
+
                 foreach (var document in docs)
                 {
                     try
@@ -77,6 +79,9 @@ namespace AspNetDevNews.Services
                         var tweet = await twitterCtx.TweetAsync(message);
                         //var tweet = new Status();
                         //tweet.StatusID = 11;
+
+                        this.Logger.AddMessage("SendTweet", "tweeted : " + document.GetPartitionKey() + " "
+                            + document.GetRowKey() + " " + document.GetTwitterText(), string.Empty, MessageType.Info);
 
                         var twittedIssue = AutoMapper.Mapper.Map<TwittedType>(document);
                         twittedIssue.StatusID = tweet.StatusID;
